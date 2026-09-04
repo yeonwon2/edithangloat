@@ -648,6 +648,7 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
         onClose={() => setIsInspectorOpen(false)}
         project={project}
         selectedChapter={inspectorChapter}
+        onProjectUpdated={onUpdateProject}
       />
     </div>
   );

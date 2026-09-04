@@ -17,11 +17,137 @@ function errorJson(message, status = 500) {
   return json({ error: message, message }, status);
 }
 
+// Extract pronoun pairs and detected characters from chapter text
+function extractPronounAudit(text, characters = [], pronounMatrix = []) {
+  if (!text) return { charactersDetected: [], pronounPairs: [] };
+
+  const detectedChars = [];
+  for (const c of (characters || [])) {
+    const name = c.vi || c.zh;
+    if (!name || name.length < 2) continue;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matches = text.match(new RegExp(`\\b${escaped}\\b`, 'gi'));
+    if (matches && matches.length > 0) {
+      detectedChars.push({ name, count: matches.length, gender: c.gender || 'Chưa rõ', role: c.role || '' });
+    }
+  }
+
+  const pairs = [];
+  const addedKeys = new Set();
+
+  // 1. Evaluate predefined pronoun matrix
+  for (const p of (pronounMatrix || [])) {
+    const sName = p.speakerVi || p.speakerZh;
+    const lName = p.listenerVi || p.listenerZh;
+    if (!sName || !lName) continue;
+
+    const hasSpeaker = text.includes(sName);
+    const hasSelf = p.speakerCallsSelf ? text.includes(p.speakerCallsSelf) : false;
+    const hasListener = p.speakerCallsListener ? text.includes(p.speakerCallsListener) : false;
+
+    if (hasSpeaker && (hasSelf || hasListener)) {
+      const key = `${sName}➔${lName}`;
+      if (!addedKeys.has(key)) {
+        addedKeys.add(key);
+        pairs.push({
+          speaker: sName,
+          listener: lName,
+          speakerSelf: p.speakerCallsSelf || 'ta',
+          speakerCallsOther: p.speakerCallsListener || 'ngươi',
+          status: 'consistent'
+        });
+      }
+    }
+  }
+
+  // 2. Scan quotes for dialogues
+  const quotes = text.match(/[“"][^”"\n]{3,150}[”"]/g) || [];
+  for (const q of quotes) {
+    if (/(?:Hoàng thượng|Bệ hạ)/i.test(q)) {
+      if (/\bthảo dân\b/i.test(q)) {
+        const key = `Thảo dân / Ôn Trì➔Hoàng thượng`;
+        if (!addedKeys.has(key)) {
+          addedKeys.add(key);
+          pairs.push({
+            speaker: 'Thảo dân / Ôn Trì',
+            listener: 'Hoàng thượng',
+            speakerSelf: 'thảo dân',
+            speakerCallsOther: 'Hoàng thượng',
+            status: 'consistent'
+          });
+        }
+      } else if (/\btôi\b/i.test(q)) {
+        const key = `Bề dưới➔Hoàng thượng`;
+        if (!addedKeys.has(key)) {
+          addedKeys.add(key);
+          pairs.push({
+            speaker: 'Bề dưới',
+            listener: 'Hoàng thượng',
+            speakerSelf: 'tôi',
+            speakerCallsOther: 'Hoàng thượng',
+            status: 'inconsistent'
+          });
+        }
+      }
+    }
+
+    if (/(?:Nương nương|Hoàng hậu)/i.test(q)) {
+      if (/\bthảo dân\b/i.test(q) || /\bdân nữ\b/i.test(q)) {
+        const key = `Ôn Trì➔Đỗ Chiêu Ly (Nương nương)`;
+        if (!addedKeys.has(key)) {
+          addedKeys.add(key);
+          pairs.push({
+            speaker: 'Ôn Trì',
+            listener: 'Đỗ Chiêu Ly (Nương nương)',
+            speakerSelf: /\bdân nữ\b/i.test(q) ? 'dân nữ' : 'thảo dân',
+            speakerCallsOther: 'nương nương',
+            status: 'consistent'
+          });
+        }
+      }
+    }
+
+    if (/\bbản cung\b/i.test(q)) {
+      const key = `Đỗ Chiêu Ly (Hoàng hậu)➔Bề dưới`;
+      if (!addedKeys.has(key)) {
+        addedKeys.add(key);
+        pairs.push({
+          speaker: 'Đỗ Chiêu Ly (Hoàng hậu)',
+          listener: 'Bề dưới / Cung nhân',
+          speakerSelf: 'bản cung',
+          speakerCallsOther: 'ngươi',
+          status: 'consistent'
+        });
+      }
+    }
+
+    if (/\btrẫm\b/i.test(q)) {
+      const key = `Hoàng đế➔Quần thần`;
+      if (!addedKeys.has(key)) {
+        addedKeys.add(key);
+        pairs.push({
+          speaker: 'Hoàng đế',
+          listener: 'Quần thần / Hậu cung',
+          speakerSelf: 'trẫm',
+          speakerCallsOther: 'khanh / các ngươi',
+          status: 'consistent'
+        });
+      }
+    }
+  }
+
+  return {
+    charactersDetected: detectedChars,
+    pronounPairs: pairs
+  };
+}
+
 // 7-Pillar QA Audit Engine (matching PostProcessor.audit)
 function auditText(text, originalText = '', glossary = {}) {
   const issues = [];
   const chars = glossary.characters || [];
   const terms = glossary.terms || [];
+  const pronounMatrix = glossary.pronounMatrix || [];
 
   if (!text || !text.trim()) {
     return {
@@ -117,6 +243,26 @@ function auditText(text, originalText = '', glossary = {}) {
     });
   }
 
+  // 6. Dialogue pronoun check (detect modern pronouns in royal/historical context)
+  const quotes = text.match(/[“"][^”"\n]{3,150}[”"]/g) || [];
+  const pronounViolations = [];
+  for (const q of quotes) {
+    if (/(?:Hoàng thượng|Bệ hạ|nương nương|Hoàng hậu)/i.test(q) && /\btôi\b/i.test(q)) {
+      pronounViolations.push(q);
+    }
+  }
+  if (pronounViolations.length > 0) {
+    issues.push({
+      id: 'pronoun_modern',
+      type: 'pronoun_inconsistency',
+      severity: 'warning',
+      title: 'Lẫn đại từ hiện đại "tôi" trong thoại cung đình',
+      message: `Phát hiện ${pronounViolations.length} câu thoại xưng "tôi" trước mặt Hoàng đế / Hoàng hậu.`,
+      targetSnippet: pronounViolations[0],
+      instruction: 'Đổi "tôi" thành "thảo dân", "dân nữ" hoặc xưng hô phù hợp với phẩm hàm.'
+    });
+  }
+
   const criticalCount = issues.filter(i => i.severity === 'critical').length;
   const warningCount = issues.filter(i => i.severity === 'warning').length;
 
@@ -124,10 +270,13 @@ function auditText(text, originalText = '', glossary = {}) {
   if (criticalCount > 0) overallStatus = 'critical';
   else if (warningCount > 0) overallStatus = 'warning';
 
+  const pronounAudit = extractPronounAudit(text, chars, pronounMatrix);
+
   return {
     status: overallStatus,
     summary: criticalCount > 0 ? `Phát hiện ${criticalCount} lỗi nghiêm trọng!` : warningCount > 0 ? `Có ${warningCount} cảnh báo cần lưu ý.` : 'Bản dịch đạt chuẩn xuất bản!',
     issues,
+    pronounAudit,
     stats: {
       totalIssues: issues.length,
       criticalCount,
@@ -137,8 +286,136 @@ function auditText(text, originalText = '', glossary = {}) {
   };
 }
 
+// Comprehensive Sino-Vietnamese (Hán Việt) phonetic lookup map
+// Covers characters commonly found in Chinese web novels to eradicate 100% leftover Hanzi
+const SINO_VIET_MAP = {
+  '兰': 'lan', '萬': 'vạn', '万': 'vạn', '思': 'tư', '忠': 'trung', '署': 'thự', '上': 'thượng', '娘': 'nương',
+  '竹': 'trúc', '殿': 'điện', '笑': 'tiếu', '終': 'chung', '偏': 'thiên', '嬌': 'kiều', '宴': 'yến', '竟': 'cánh',
+  '璃': 'ly', '乐': 'lạc', '樂': 'lạc', '药': 'dược', '藥': 'dược', '院': 'viện', '判': 'phán', '使': 'sứ',
+  '医': 'y', '醫': 'y', '生': 'sinh', '帝': 'đế', '后': 'hậu', '妃': 'phi', '王': 'vương', '公': 'công',
+  '主': 'chúa', '爷': 'gia', '爺': 'gia', '哥': 'ca', '姐': 'tỷ', '妹': 'muội', '弟': 'đệ', '儿': 'nhi',
+  '兒': 'nhi', '女': 'nữ', '子': 'tử', '君': 'quân', '臣': 'thần', '侯': 'hầu', '卿': 'khanh', '官': 'quan',
+  '府': 'phủ', '堂': 'đường', '阁': 'các', '閣': 'các', '宫': 'cung', '宮': 'cung', '寺': 'tự', '城': 'thành',
+  '国': 'quốc', '國': 'quốc', '朝': 'triều', '代': 'đại', '宗': 'tông', '门': 'môn', '門': 'môn', '派': 'phái',
+  '道': 'đạo', '法': 'pháp', '剑': 'kiếm', '劍': 'kiếm', '刀': 'đao', '枪': 'thương', '槍': 'thương', '拳': 'quyền',
+  '掌': 'chưởng', '心': 'tâm', '神': 'thần', '魔': 'ma', '妖': 'yêu', '鬼': 'quỷ', '仙': 'tiên', '佛': 'phật',
+  '龙': 'long', '龍': 'long', '凤': 'phượng', '鳳': 'phượng', '虎': 'hổ', '玄': 'huyền', '武': 'vũ', '天': 'thiên',
+  '地': 'địa', '人': 'nhân', '山': 'sơn', '海': 'hải', '江': 'giang', '河': 'hà', '风': 'phong', '風': 'phong',
+  '云': 'vân', '雲': 'vân', '雨': 'vũ', '雪': 'tuyết', '月': 'nguyệt', '日': 'nhật', '星': 'tinh', '光': 'quang',
+  '暗': 'ám', '明': 'minh', '清': 'thanh', '白': 'bạch', '黑': 'hắc', '红': 'hồng', '紅': 'hồng', '黄': 'hoàng',
+  '黃': 'hoàng', '青': 'thanh', '紫': 'tử', '金': 'kim', '银': 'ngân', '銀': 'ngân', '玉': 'ngọc', '珠': 'châu',
+  '宝': 'bảo', '寶': 'bảo', '石': 'thạch', '火': 'hỏa', '水': 'thủy', '木': 'mộc', '土': 'thổ',
+  '太': 'thái', '皇': 'hoàng', '大': 'đại', '小': 'tiểu', '老': 'lão', '少': 'thiếu', '中': 'trung',
+  '前': 'tiền', '左': 'tả', '右': 'hữu', '东': 'đông', '西': 'tây', '南': 'nam', '北': 'bắc',
+  '春': 'xuân', '夏': 'hạ', '秋': 'thu', '冬': 'đông', '夜': 'dạ', '晨': 'thần', '夕': 'tịch', '暮': 'mộ',
+  '花': 'hoa', '草': 'thảo', '树': 'thụ', '林': 'lâm', '叶': 'diệp', '葉': 'diệp', '枝': 'chi', '根': 'căn',
+  '鸟': 'điểu', '獸': 'thú', '兽': 'thú', '鱼': 'ngư', '魚': 'ngư', '虫': 'trùng', '蟲': 'trùng',
+  '父': 'phụ', '母': 'mẫu', '兄': 'huynh', '夫': 'phu', '妻': 'thê', '妾': 'thiếp', '奴': 'nô', '婢': 'tỳ',
+  '侍': 'thị', '卫': 'vệ', '衛': 'vệ', '兵': 'binh', '将': 'tướng', '帥': 'soái', '帅': 'soái', '军': 'quân',
+  '軍': 'quân', '师': 'sư', '師': 'sư', '徒': 'đồ', '友': 'hữu', '敌': 'địch', '仇': 'thù', '客': 'khách',
+  '家': 'gia', '族': 'tộc', '名': 'danh', '字': 'tự', '号': 'hiệu', '號': 'hiệu',
+  '死': 'tử', '伤': 'thương', '傷': 'thương', '病': 'bệnh', '残': 'tàn', '廢': 'phế', '废': 'phế',
+  '善': 'thiện', '恶': 'ác', '惡': 'ác', '真': 'chân', '假': 'giả', '美': 'mỹ', '丑': 'sửu', '高': 'cao',
+  '低': 'đê', '深': 'thâm', '浅': 'thiển', '重': 'trọng', '轻': 'khinh', '快': 'khoái', '慢': 'mạn',
+  '难': 'nan', '易': 'dịch', '新': 'tân', '旧': 'cựu', '长': 'trường', '短': 'đoản', '远': 'viễn', '近': 'cận',
+  '正': 'chính', '反': 'phản', '合': 'hợp', '分': 'phân', '同': 'đồng', '异': 'dị',
+  '安': 'an', '危': 'nguy', '吉': 'cát', '凶': 'hung', '胜': 'thắng', '敗': 'bại', '败': 'bại',
+  '成': 'thành', '毁': 'hủy', '得': 'đắc', '失': 'thất', '爱': 'ái', '愛': 'ái', '恨': 'hận', '情': 'tình',
+  '义': 'nghĩa', '義': 'nghĩa', '理': 'lý', '气': 'khí', '氣': 'khí', '志': 'chí', '力': 'lực', '势': 'thế',
+  '勢': 'thế', '威': 'uy', '权': 'quyền', '權': 'quyền', '位': 'vị', '德': 'đức', '恩': 'ân',
+  '福': 'phúc', '寿': 'thọ', '壽': 'thọ', '禄': 'lộc', '祿': 'lộc', '喜': 'hỷ', '怒': 'nộ', '哀': 'ai',
+  '悲': 'bi', '欢': 'hoan', '愁': 'sầu', '苦': 'khổ', '忧': 'ưu', '懼': 'cụ', '惧': 'cụ',
+  '惊': 'kinh', '驚': 'kinh', '恐': 'khủng', '慌': 'hoảng', '乱': 'loạn', '亂': 'loạn', '静': 'tĩnh',
+  '定': 'định', '平': 'bình', '和': 'hòa', '穆': 'mục', '泰': 'thái', '康': 'khang', '宁': 'ninh', '寧': 'ninh',
+  '昭': 'chiêu', '宣': 'tuyên', '显': 'hiển', '隱': 'ẩn', '隐': 'ẩn', '秘': 'bí', '妙': 'diệu',
+  '奇': 'kỳ', '怪': 'quái', '殊': 'thù', '绝': 'tuyệt', '頂': 'đỉnh', '顶': 'đỉnh', '极': 'cực',
+  '至': 'chí', '最': 'tối', '初': 'sơ', '终': 'chung', '本': 'bản', '末': 'mạt', '原': 'nguyên', '因': 'nhân',
+  '果': 'quả', '报': 'báo', '報': 'báo', '应': 'ứng', '應': 'ứng', '验': 'nghiệm', '驗': 'nghiệm',
+  '迟': 'trì', '遲': 'trì', '温': 'ôn', '溫': 'ôn', '杜': 'đỗ', '魏': 'ngụy', '吴': 'ngô', '吳': 'ngô',
+  '何': 'hà', '刘': 'lưu', '劉': 'lưu', '李': 'lý', '张': 'trương', '張': 'trương',
+  '赵': 'triệu', '趙': 'triệu', '钱': 'tiền', '錢': 'tiền', '孙': 'tôn', '孫': 'tôn', '周': 'chu',
+  '陈': 'trần', '陳': 'trần', '杨': 'dương', '楊': 'dương', '沈': 'thẩm', '苏': 'tô', '蘇': 'tô',
+  '卢': 'lô', '盧': 'lô', '崔': 'thôi', '谢': 'tạ', '謝': 'tạ', '韩': 'hàn', '韓': 'hàn', '宋': 'tống',
+  '唐': 'đường', '梁': 'lương', '齐': 'tề', '齊': 'tề', '楚': 'sở', '秦': 'tần', '燕': 'yến', '晋': 'tấn',
+  '蜀': 'thục', '越': 'việt', '萧': 'tiêu', '蕭': 'tiêu', '方': 'phương',
+  '霜': 'sương', '枫': 'phong', '荷': 'hà', '莲': 'liên', '菊': 'cúc', '梅': 'mai',
+  '柳': 'liễu', '松': 'tùng', '柏': 'bách', '桂': 'quế', '槐': 'hòe', '梧': 'ngô', '桐': 'đồng',
+  '荆': 'kinh', '棘': 'cức', '藤': 'đằng', '萝': 'la', '芝': 'chi', '苓': 'linh', '术': 'thuật',
+  '参': 'sâm', '芪': 'kỳ', '归': 'quy', '歸': 'quy', '芎': 'khung', '芍': 'thược',
+  '香': 'hương', '味': 'vị', '甘': 'cam', '辛': 'tân', '酸': 'toan', '咸': 'hàm',
+  '寒': 'hàn', '热': 'nhiệt', '熱': 'nhiệt', '凉': 'lương', '涼': 'lương',
+  '毒': 'độc', '解': 'giải', '补': 'bổ', '補': 'bổ', '泻': 'tả', '瀉': 'tả', '汗': 'hãn',
+  '吐': 'thổ', '下': 'hạ', '治': 'trị', '救': 'cứu', '愈': 'dũ',
+  '疾': 'tật', '痛': 'thống', '痒': 'ngứa', '麻': 'ma',
+  '胀': 'trướng', '脹': 'trướng', '满': 'mãn', '滿': 'mãn', '闷': 'muộn', '悶': 'muộn', '烦': 'phiền',
+  '燥': 'táo', '渴': 'khát', '饥': 'cơ', '飽': 'bão', '饱': 'bão', '困': 'khốn', '乏': 'phạp', '倦': 'quyện'
+};
+
+const COMMON_HANZI_PHRASES = {
+  '娘娘': 'nương nương',
+  'nương娘': 'nương nương',
+  'Nương娘': 'Nương nương',
+  '怎么': 'làm sao',
+  '偏偏': 'ngặt nỗi',
+  '御药署': 'Ngự dược thự',
+  'Ngự药署': 'Ngự dược thự',
+  'Ngự dược署': 'Ngự dược thự',
+  'Thái y 院': 'Thái y viện',
+  'Thái医院': 'Thái y viện',
+  'y 院': 'y viện',
+  'Thọ宴': 'Thọ yến',
+  'cáo退': 'cáo lui',
+  'Đỗ Chiêu璃': 'Đỗ Chiêu Ly',
+  'Chiêu璃': 'Chiêu Ly',
+  'Hoàng上': 'Hoàng Thượng',
+  'A Trì': 'A Trì',
+  '阿迟': 'A Trì',
+  '温迟': 'Ôn Trì'
+};
+
+// Automatic Sino-Vietnamese Hanzi Sanitizer
+function sanitizeLeftoverHanzi(text) {
+  if (!text) return '';
+  let res = text;
+
+  // 1. Replace multi-character phrases first
+  for (const [k, v] of Object.entries(COMMON_HANZI_PHRASES)) {
+    res = res.split(k).join(v);
+  }
+
+  // 2. Handle half-translated names/compounds: "Tử兰" -> "Tử Lan", "Ngô万" -> "Ngô Vạn", "Hà思忠" -> "Hà Tư Trung", "An乐" -> "An Lạc"
+  res = res.replace(/([A-ZÀ-Ỹa-zà-ỹ]+)([\u4e00-\u9fa5]+)/g, (match, p1, p2) => {
+    const isCap = /^[A-ZÀ-Ỹ]/.test(p1);
+    const converted = p2.split('').map(ch => {
+      const vi = SINO_VIET_MAP[ch] || '';
+      if (!vi) return ch;
+      return isCap ? vi.charAt(0).toUpperCase() + vi.slice(1) : vi;
+    }).join(' ');
+    return `${p1} ${converted}`;
+  });
+
+  // Handle Hanzi directly before Latin: "阿Trì" -> "A Trì"
+  res = res.replace(/([\u4e00-\u9fa5]+)([A-ZÀ-Ỹa-zà-ỹ]+)/g, (match, p1, p2) => {
+    const isCap = /^[A-ZÀ-Ỹ]/.test(p2);
+    const converted = p1.split('').map(ch => {
+      const vi = SINO_VIET_MAP[ch] || '';
+      if (!vi) return ch;
+      return isCap ? vi.charAt(0).toUpperCase() + vi.slice(1) : vi;
+    }).join(' ');
+    return `${converted} ${p2}`;
+  });
+
+  // 3. Convert any standalone single Chinese characters
+  res = res.replace(/[\u4e00-\u9fa5]/g, (ch) => {
+    const vi = SINO_VIET_MAP[ch];
+    return vi || ch;
+  });
+
+  return res;
+}
+
 // Automated Text Cleaner & 1-Click Auto-Fix helper
-function autoFixContent(text) {
+function autoFixContent(text, context = {}) {
   if (!text) return text;
   let fixed = text;
 
@@ -163,25 +440,11 @@ function autoFixContent(text) {
     .replace(/——/g, ' — ')
     .replace(/…/g, '...');
 
-  // Extract Vietnamese from mixed Han-Viet patterns: e.g. "阿迟 (A Trì)" -> "A Trì", "刘导 (Đạo diễn Lưu)" -> "Đạo diễn Lưu"
+  // Extract Vietnamese from mixed Han-Viet patterns: e.g. "阿迟 (A Trì)" -> "A Trì"
   fixed = fixed.replace(/[\u4e00-\u9fa5]+\s*\(([^)]+)\)/g, '$1');
 
-  // Fix common broken half-translated words & words with Chinese characters
-  fixed = fixed.replace(/nương娘/g, 'nương nương');
-  fixed = fixed.replace(/娘娘/g, 'nương nương');
-  fixed = fixed.replace(/Đỗ Chiêu璃/g, 'Đỗ Chiêu Ly');
-  fixed = fixed.replace(/Chiêu璃/g, 'Chiêu Ly');
-  fixed = fixed.replace(/Thái y 院/g, 'Thái y viện');
-  fixed = fixed.replace(/Thái医院/g, 'Thái y viện');
-  fixed = fixed.replace(/y 院/g, 'y viện');
-  fixed = fixed.replace(/Ngự药署/g, 'Ngự dược thự');
-  fixed = fixed.replace(/Thọ宴/g, 'Thọ yến');
-  fixed = fixed.replace(/cáo退\s*lui/g, 'cáo lui');
-  fixed = fixed.replace(/cáo退/g, 'cáo lui');
-  fixed = fixed.replace(/阿迟/g, 'A Trì');
-  fixed = fixed.replace(/温迟/g, 'Ôn Trì');
-  fixed = fixed.replace(/đêm trẫm nhập cung/gi, 'đêm nhập cung');
-  fixed = fixed.replace(/trẫm nhập cung/gi, 'nhập cung');
+  // Convert all leftover Chinese characters into Sino-Vietnamese
+  fixed = sanitizeLeftoverHanzi(fixed);
 
   // Convert artifacts & smooth phrasing
   fixed = fixed.replace(/\bđích\b/g, '');
@@ -196,6 +459,26 @@ function autoFixContent(text) {
   fixed = fixed.replace(/\bđối với việc này\b/gi, 'về việc này');
   fixed = fixed.replace(/\btheo vách đá\b/gi, 'lao dốc');
   fixed = fixed.replace(/\btruyền thông tự nhân\b/gi, 'truyền thông độc lập');
+
+  // Dialogue pronoun fixing in royal/palace context:
+  // 1. Foreign envoys / emissaries addressing Empress Dowager / Emperor
+  fixed = fixed.replace(/Nước chúng tôi/g, 'Nước chúng thần');
+
+  // 2. Eradicate modern "tôi" in ANY dialogue addressing or mentioning royalty (Hoàng thượng, Bệ hạ, Nương nương, Hoàng hậu, Thái hậu)
+  fixed = fixed.replace(/(“[^”\n]*?”|"[^"\n]*?")/g, (dialogue) => {
+    if (/(?:Hoàng thượng|Bệ hạ|Nương nương|Hoàng hậu|Thái hậu)/i.test(dialogue)) {
+      return dialogue
+        .replace(/\bTôi tôi tôi,\s*tự mình bôi\b/gi, 'Thảo dân, thảo dân tự mình bôi')
+        .replace(/\bTôi\b/g, 'Thảo dân')
+        .replace(/\btôi\b/g, 'thảo dân')
+        .replace(/\bta phụng mệnh\b/gi, 'thảo dân phụng mệnh');
+    }
+    return dialogue;
+  });
+
+  // 3. Common specific fixes
+  fixed = fixed.replace(/của tôi ấy mà/g, 'của thảo dân ấy mà');
+  fixed = fixed.replace(/đại nhân của tôi/g, 'đại nhân của ta');
 
   // Balance unpaired quotes
   const opens = (fixed.match(/“/g) || []).length;
@@ -902,11 +1185,15 @@ export async function onRequest(context) {
           terms: JSON.parse(project.terms || '[]'),
           pronounMatrix: JSON.parse(project.pronounMatrix || '[]'),
           settings: JSON.parse(project.settings || '{}'),
-          chapters: (chapters || []).map(c => ({
-            ...c,
-            qaReport: JSON.parse(c.qaReport || '{}'),
-            issues: JSON.parse(c.issues || '[]')
-          }))
+          chapters: (chapters || []).map(c => {
+            const qa = JSON.parse(c.qaReport || '{}');
+            return {
+              ...c,
+              qaReport: qa,
+              pronounAudit: qa.pronounAudit || null,
+              issues: JSON.parse(c.issues || '[]')
+            };
+          })
         };
         return json({
           success: true,
@@ -952,11 +1239,15 @@ export async function onRequest(context) {
           terms: JSON.parse(updatedProject.terms || '[]'),
           pronounMatrix: JSON.parse(updatedProject.pronounMatrix || '[]'),
           settings: JSON.parse(updatedProject.settings || '{}'),
-          chapters: (chapters || []).map(c => ({
-            ...c,
-            qaReport: JSON.parse(c.qaReport || '{}'),
-            issues: JSON.parse(c.issues || '[]')
-          }))
+          chapters: (chapters || []).map(c => {
+            const qa = JSON.parse(c.qaReport || '{}');
+            return {
+              ...c,
+              qaReport: qa,
+              pronounAudit: qa.pronounAudit || null,
+              issues: JSON.parse(c.issues || '[]')
+            };
+          })
         };
         return json({ success: true, project: projectData, ...projectData });
       }
@@ -1475,6 +1766,8 @@ export async function onRequest(context) {
 - Dòng 1: Tiêu đề chương dịch hoàn chỉnh sang tiếng Việt (Ví dụ: "Chương 1: Yết Bảng" hoặc "Chương 2: Nhập Cung" hoặc "Chương 2: Lai Giả Bất Thiện" hoặc "Giới Thiệu & Văn Án").
 - Dòng 2 trở đi: Toàn bộ nội dung chương dịch. Giữ nguyên 100% kết cấu phân đoạn và ngắt dòng của bản gốc.
 - Dịch đầy đủ 100%, không tóm tắt hay lược bỏ bất kỳ câu nào.
+- TUYỆT ĐỐI KHÔNG ĐỂ SÓT BẤT KỲ CHỮ HÁN NÀO trong bản dịch! Tất cả danh xưng, tên người (như Tử Lan, Ngô Vạn, Hà Tư Trung, An Lạc), địa danh, y quán chức vụ (như Ngự dược thự, Thái y viện, Thọ yến), lời đối thoại và từ đệm PHẢI được dịch 100% sang tiếng Việt / Hán Việt. Tuyệt đối cấm để lọt dạng nửa Hán nửa Việt như "Tử兰" hay "Ngô万".
+- TUYỆT ĐỐI KHÔNG dùng đại từ hiện đại ("tôi", "anh", "em", "cô ấy") trong lời thoại truyện cổ đại / hoàng cung. Kẻ dưới trước mặt Hoàng thượng xưng "thảo dân", gọi "Hoàng thượng / Bệ hạ"; trước mặt Hoàng hậu xưng "thảo dân" (hoặc "dân nữ"), gọi "Nương nương".
 - Chỉ xuất ra DUY NHẤT bản dịch tiếng Việt, không kèm lời chào hỏi, mở đầu hay ghi chú.`;
 
       const titleToTranslate = chapter.title || '';
@@ -1669,6 +1962,150 @@ export async function onRequest(context) {
           ...updated,
           qaReport: qa
         }
+      });
+    }
+
+    // Pronoun Consistency Cross-Chapter Audit: /api/projects/:id/pronoun-consistency
+    const pronounConsistencyMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/pronoun-consistency$/);
+    if (pronounConsistencyMatch && method === 'GET') {
+      const [_, projectId] = pronounConsistencyMatch;
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const characters = JSON.parse(project.characters || '[]');
+      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+
+      const { results: chapters } = await db.prepare(
+        "SELECT id, chapterIndex, title, translatedTitle, translatedText, qaReport, status FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL) ORDER BY chapterIndex ASC"
+      ).bind(projectId).all();
+
+      const inconsistencies = [];
+      const crossChapterPairsMap = new Map();
+      let totalPairsChecked = 0;
+
+      for (const ch of (chapters || [])) {
+        const text = ch.translatedText || '';
+        if (!text.trim()) continue;
+
+        // Extract pronouns for this chapter
+        const audit = extractPronounAudit(text, characters, pronounMatrix);
+
+        // Check for modern pronouns in dialogues
+        const quotes = text.match(/[“"][^”"\n]{3,150}[”"]/g) || [];
+        for (const q of quotes) {
+          if (/(?:Hoàng thượng|Bệ hạ|nương nương|Hoàng hậu)/i.test(q) && /\btôi\b/i.test(q)) {
+            inconsistencies.push({
+              chapterId: ch.id,
+              chapterIndex: ch.chapterIndex,
+              chapterTitle: ch.translatedTitle || ch.title,
+              severity: 'warning',
+              issue: 'Xưng hô hiện đại "tôi" trước mặt Hoàng thượng / Nương nương',
+              snippet: q.slice(0, 100),
+              suggestedFix: 'Đổi thành "thảo dân" hoặc "dân nữ"'
+            });
+          }
+        }
+
+        // Aggregate pairs across chapters
+        for (const p of audit.pronounPairs) {
+          totalPairsChecked++;
+          const pairKey = `${p.speaker} ➔ ${p.listener}`;
+          if (!crossChapterPairsMap.has(pairKey)) {
+            crossChapterPairsMap.set(pairKey, {
+              speaker: p.speaker,
+              listener: p.listener,
+              speakerSelf: p.speakerCallsSelf,
+              speakerCallsOther: p.speakerCallsOther,
+              chapters: [ch.chapterIndex],
+              isConsistent: p.status !== 'inconsistent'
+            });
+          } else {
+            const entry = crossChapterPairsMap.get(pairKey);
+            if (!entry.chapters.includes(ch.chapterIndex)) {
+              entry.chapters.push(ch.chapterIndex);
+            }
+            if (p.status === 'inconsistent') {
+              entry.isConsistent = false;
+            }
+          }
+        }
+      }
+
+      const crossChapterMatrix = Array.from(crossChapterPairsMap.values());
+      const consistencyRate = totalPairsChecked > 0
+        ? Math.max(0, Math.min(100, Math.round(((totalPairsChecked - inconsistencies.length) / totalPairsChecked) * 1000) / 10))
+        : 100;
+
+      return json({
+        success: true,
+        overallConsistency: consistencyRate,
+        totalChaptersAudited: (chapters || []).length,
+        totalPairsAudited: totalPairsChecked,
+        crossChapterMatrix,
+        inconsistencies,
+        matrixRulesCount: pronounMatrix.length,
+        charactersCount: characters.length
+      });
+    }
+
+    // Batch Auto-Fix Pronouns & Hanzi across ALL completed chapters: /api/projects/:id/batch-fix-pronouns
+    const batchFixMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/batch-fix-pronouns$/);
+    if (batchFixMatch && method === 'POST') {
+      const [_, projectId] = batchFixMatch;
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const characters = JSON.parse(project.characters || '[]');
+      const terms = JSON.parse(project.terms || '[]');
+      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+
+      const { results: chapters } = await db.prepare(
+        "SELECT id, chapterIndex, title, originalText, translatedTitle, translatedText FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL) ORDER BY chapterIndex ASC"
+      ).bind(projectId).all();
+
+      let fixedCount = 0;
+      let totalHanziCleaned = 0;
+      const now = new Date().toISOString();
+
+      for (const ch of (chapters || [])) {
+        if (!ch.translatedText) continue;
+        const origText = ch.translatedText;
+        const cleanedText = autoFixContent(ch.translatedText);
+        const cleanedTitle = autoFixContent(ch.translatedTitle || ch.title);
+
+        const hanBefore = (origText.match(/[\u4e00-\u9fa5]/g) || []).length;
+        const hanAfter = (cleanedText.match(/[\u4e00-\u9fa5]/g) || []).length;
+        totalHanziCleaned += Math.max(0, hanBefore - hanAfter);
+
+        const qa = auditText(cleanedText, ch.originalText, { characters, terms, pronounMatrix });
+
+        await db.prepare(`
+          UPDATE chapters
+          SET translatedText = ?,
+              translatedTitle = ?,
+              qaReport = ?,
+              issues = ?,
+              chineseCharCount = ?,
+              updatedAt = ?
+          WHERE id = ?
+        `).bind(
+          cleanedText,
+          cleanedTitle,
+          JSON.stringify(qa),
+          JSON.stringify(qa.issues.map(i => i.message)),
+          qa.stats.chineseCharCount,
+          now,
+          ch.id
+        ).run();
+
+        fixedCount++;
+      }
+
+      return json({
+        success: true,
+        message: `Đã chuẩn hóa và làm sạch thành công ${fixedCount} chương! Đã triệt tiêu ${totalHanziCleaned} chữ Hán tồn đọng.`,
+        fixedChaptersCount: fixedCount,
+        totalHanziCleaned
       });
     }
 
