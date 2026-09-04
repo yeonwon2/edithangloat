@@ -24,11 +24,19 @@ class TextSplitter {
       }];
     }
 
-    // Regex matching chapter headers:
-    // 1. 第1章, 第一章, 第 123 章, 第十二回, 第一卷, etc.
-    // 2. Chương 1, Chương 01, Hồi 1, Tiết 1, etc.
-    // 3. Chapter 1, Chap 1, etc.
-    const chapterRegex = /(?:^|\n)\s*(第\s*[0-9一二三四五六七八九十百千万零两]+\s*[章回节卷集部][^\n]*|(?:Chương|Hồi|Tiết|Quyển|Chapter|Chap)\s+[0-9一二三四五六七八九十百千万零两]+[^\n]*)/gi;
+    let chapterRegex;
+    if (options.customPattern && options.customPattern.trim()) {
+      const pat = options.customPattern.trim();
+      if (pat.includes('*')) {
+        const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两\\s]+');
+        chapterRegex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      } else {
+        const escaped = pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        chapterRegex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      }
+    } else {
+      chapterRegex = /(?:^|\n)[\s\u3000]*(【?\s*(?:第\s*[0-9一二三四五六七八九十百千万零两]+\s*[章回节卷集部]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap)\s*[0-9一二三四五六七八九十百千万零两]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:(?:\(|\[)?[0-9]{1,4}(?:\)|\]|\.|\、)\s*[^，。\n]{2,30}))\s*】?[^\n]*)/gi;
+    }
 
     const matches = [];
     let match;

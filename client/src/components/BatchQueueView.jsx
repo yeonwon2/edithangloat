@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, RefreshCw, FileText, CheckCircle2, AlertCircle, Clock, Trash2, Eye, Plus, ChevronDown, ChevronUp, Terminal, ShieldCheck } from 'lucide-react';
+import { Play, Pause, RefreshCw, FileText, CheckCircle2, AlertCircle, Clock, Trash2, Eye, Plus, ChevronDown, ChevronUp, Terminal, ShieldCheck, Scissors, X } from 'lucide-react';
 import PronounInspectorModal from './PronounInspectorModal';
 
 export default function BatchQueueView({ project, onUpdateProject, onSelectChapterForEdit, onOpenImportModal }) {
@@ -10,6 +10,9 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
   const [translatingSingleId, setTranslatingSingleId] = useState(null);
   const [inspectorChapter, setInspectorChapter] = useState(null);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [splitChapterTarget, setSplitChapterTarget] = useState(null);
+  const [splitPatternInput, setSplitPatternInput] = useState('');
+  const [splitting, setSplitting] = useState(false);
 
   const chapters = project?.chapters || [];
 
@@ -103,6 +106,33 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
       onUpdateProject({ ...project, chapters: updated });
     } catch (e) {
       alert('Lỗi xóa chương: ' + e.message);
+    }
+  };
+
+  const handleSplitChapter = async () => {
+    if (!splitChapterTarget) return;
+    setSplitting(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/chapters/${splitChapterTarget.id}/split`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customPattern: splitPatternInput.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Refresh project chapters
+      const projRes = await fetch(`/api/projects/${project.id}`);
+      const projData = await projRes.json();
+      if (projData.project) onUpdateProject(projData.project);
+
+      alert(data.message || 'Đã tách chương thành công!');
+      setSplitChapterTarget(null);
+      setSplitPatternInput('');
+    } catch (e) {
+      alert('Lỗi tách chương: ' + e.message);
+    } finally {
+      setSplitting(false);
     }
   };
 
@@ -450,16 +480,26 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
                           <Play className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          onClick={() => {
+                            setSplitChapterTarget(ch);
+                            setSplitPatternInput('');
+                          }}
+                          title="Tách chương này làm đôi (nếu chương bị dính 2 chương)"
+                          className="p-1.5 bg-slate-800 hover:bg-amber-600 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
+                        >
+                          <Scissors className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={() => onSelectChapterForEdit(ch)}
                           title="Xem so sánh & Chỉnh sửa"
-                          className="p-1.5 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg transition"
+                          className="p-1.5 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg transition cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteChapter(ch.id)}
                           title="Xóa chương"
-                          className="p-1.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-lg transition"
+                          className="p-1.5 bg-slate-800 hover:bg-red-600 text-slate-400 hover:text-white rounded-lg transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -472,6 +512,87 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
           </tbody>
         </table>
       </div>
+
+      {/* Split Chapter Modal */}
+      {splitChapterTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/20 rounded-xl text-amber-400">
+                  <Scissors className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base text-white">Tách Chương Truyện</h3>
+                  <p className="text-xs text-slate-400">Phân tách chương hiện tại thành các chương riêng biệt</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSplitChapterTarget(null)}
+                className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5">
+                <span className="text-slate-400 font-semibold">Chương đang chọn:</span>
+                <p className="text-sm font-bold text-white">{splitChapterTarget.title}</p>
+                <p className="text-[11px] text-slate-500 line-clamp-3 font-mono">
+                  {splitChapterTarget.originalText?.slice(0, 200)}...
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-semibold text-slate-200">
+                  Từ khóa phân tách bên trong chương:
+                </label>
+                <input
+                  type="text"
+                  value={splitPatternInput}
+                  onChange={e => setSplitPatternInput(e.target.value)}
+                  placeholder="Để trống để TỰ ĐỘNG nhận diện (第X章, Chương X...), hoặc nhập từ khóa..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500 font-mono"
+                  autoFocus
+                />
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[10px] text-slate-500">Gợi ý nhanh:</span>
+                  {['第*章', 'Chương', 'Chapter', '===', '1. ', '2. ', 'Hồi'].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setSplitPatternInput(p)}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono border border-slate-700 cursor-pointer"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSplitChapterTarget(null)}
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSplitChapter}
+                  disabled={splitting}
+                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-amber-600/20 cursor-pointer"
+                >
+                  <Scissors className="w-4 h-4" />
+                  {splitting ? 'Đang phân tách...' : 'Bắt Đầu Tách Chương'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pronoun Inspector Modal */}
       <PronounInspectorModal
