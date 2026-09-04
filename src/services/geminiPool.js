@@ -121,18 +121,29 @@ class GeminiPool {
     } catch (e) {
       console.warn('Could not fetch models list:', e.message);
     }
-    return ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    return ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash'];
   }
 
-  async testKey(apiKey, preferredModel = 'gemini-3.5-flash-lite') {
+  normalizeModel(model) {
+    if (!model) return 'gemini-3.6-flash';
+    const m = model.trim().toLowerCase();
+    if (m.includes('2.0') || m.includes('1.5')) {
+      if (m.includes('lite')) return 'gemini-3.5-flash-lite';
+      return 'gemini-3.6-flash';
+    }
+    return model.trim();
+  }
+
+  async testKey(apiKey, preferredModel = 'gemini-3.6-flash') {
+    const normPreferred = this.normalizeModel(preferredModel);
     const candidateModels = [
-      preferredModel,
+      normPreferred,
+      'gemini-3.6-flash',
       'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
       'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro'
+      'gemini-2.5-pro'
     ];
     const uniqueCandidates = Array.from(new Set(candidateModels.filter(Boolean)));
 
@@ -187,13 +198,14 @@ class GeminiPool {
     let attempts = 0;
     let lastError = null;
 
+    const normModel = this.normalizeModel(model || 'gemini-3.6-flash');
     const fallbackChain = [
-      model,
+      normModel,
+      'gemini-3.6-flash',
       'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash'
+      'gemini-2.5-flash'
     ].filter(Boolean);
     let modelIndex = 0;
 
@@ -207,7 +219,7 @@ class GeminiPool {
       const currentKeyObj = providedKey ? { key: providedKey } : this.getNextKey(lastUsedKey);
       const apiKey = currentKeyObj.key;
       lastUsedKey = apiKey;
-      const currentModel = fallbackChain[modelIndex] || 'gemini-1.5-flash';
+      const currentModel = fallbackChain[modelIndex] || 'gemini-3.6-flash';
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 

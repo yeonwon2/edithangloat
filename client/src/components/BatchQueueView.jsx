@@ -157,10 +157,13 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
               className="bg-transparent text-indigo-300 font-semibold focus:outline-none font-mono text-xs w-36"
             />
             <datalist id="batch-models-list">
+              <option value="gemini-3.6-flash" />
               <option value="gemini-3.5-flash-lite" />
-              <option value="gemini-2.0-flash" />
-              <option value="gemini-1.5-flash" />
-              <option value="gemini-1.5-pro" />
+              <option value="gemini-3.1-flash-lite" />
+              <option value="gemini-3.5-flash" />
+              <option value="gemini-2.5-flash" />
+              <option value="gemini-2.5-flash-lite" />
+              <option value="gemini-2.5-pro" />
             </datalist>
           </div>
 

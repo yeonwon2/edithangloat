@@ -160,6 +160,114 @@ function autoFixContent(text) {
   return fixed.trim();
 }
 
+// Native Edge DOCX & EPUB Text Extractors using Web Standard DecompressionStream
+async function extractDocxText(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const view = new DataView(arrayBuffer);
+  let offset = 0;
+
+  while (offset <= bytes.length - 30) {
+    if (view.getUint32(offset, true) === 0x04034b50) {
+      const compMethod = view.getUint16(offset + 8, true);
+      const compSize = view.getUint32(offset + 18, true);
+      const fileNameLen = view.getUint16(offset + 26, true);
+      const extraLen = view.getUint16(offset + 28, true);
+      const name = new TextDecoder().decode(bytes.subarray(offset + 30, offset + 30 + fileNameLen));
+      const dataStart = offset + 30 + fileNameLen + extraLen;
+
+      if (name === 'word/document.xml') {
+        const compressed = bytes.subarray(dataStart, dataStart + compSize);
+        let xml = '';
+        if (compMethod === 8) {
+          const ds = new DecompressionStream('deflate-raw');
+          const stream = new Response(compressed).body.pipeThrough(ds);
+          xml = await new Response(stream).text();
+        } else {
+          xml = new TextDecoder().decode(compressed);
+        }
+
+        return xml
+          .replace(/<\/w:p>/gi, '\n\n')
+          .replace(/<w:br[^>]*\/>/gi, '\n')
+          .replace(/<w:tab[^>]*\/>/gi, '\t')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'")
+          .trim();
+      }
+      offset = dataStart + compSize;
+    } else {
+      offset++;
+    }
+  }
+  throw new Error('Không tìm thấy nội dung văn bản trong file .docx');
+}
+
+async function extractEpubText(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const view = new DataView(arrayBuffer);
+  let offset = 0;
+  let fullText = '';
+
+  while (offset <= bytes.length - 30) {
+    if (view.getUint32(offset, true) === 0x04034b50) {
+      const compMethod = view.getUint16(offset + 8, true);
+      const compSize = view.getUint32(offset + 18, true);
+      const fileNameLen = view.getUint16(offset + 26, true);
+      const extraLen = view.getUint16(offset + 28, true);
+      const name = new TextDecoder().decode(bytes.subarray(offset + 30, offset + 30 + fileNameLen)).toLowerCase();
+      const dataStart = offset + 30 + fileNameLen + extraLen;
+
+      if ((name.endsWith('.html') || name.endsWith('.xhtml') || name.endsWith('.htm')) &&
+          !name.includes('nav.') && !name.includes('toc.') && !name.includes('cover.')) {
+        const compressed = bytes.subarray(dataStart, dataStart + compSize);
+        let html = '';
+        if (compMethod === 8) {
+          const ds = new DecompressionStream('deflate-raw');
+          const stream = new Response(compressed).body.pipeThrough(ds);
+          html = await new Response(stream).text();
+        } else {
+          html = new TextDecoder().decode(compressed);
+        }
+
+        const chapterText = html
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<\/p>/gi, '\n\n')
+          .replace(/<br\s*[\/]?>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .trim();
+
+        if (chapterText) {
+          fullText += '\n\n' + chapterText;
+        }
+      }
+      offset = dataStart + compSize;
+    } else {
+      offset++;
+    }
+  }
+  return fullText.trim();
+}
+
+function normalizeModel(model) {
+  if (!model) return 'gemini-3.6-flash';
+  const m = model.trim().toLowerCase();
+  if (m.includes('2.0') || m.includes('1.5')) {
+    if (m.includes('lite')) return 'gemini-3.5-flash-lite';
+    return 'gemini-3.6-flash';
+  }
+  return model.trim();
+}
+
 // Helper: Ensure D1 database schema
 async function initDb(db) {
   if (!db) return;
@@ -171,7 +279,7 @@ async function initDb(db) {
           title TEXT NOT NULL,
           genre TEXT,
           toneGuidance TEXT,
-          model TEXT DEFAULT 'gemini-2.0-flash',
+          model TEXT DEFAULT 'gemini-3.6-flash',
           characters TEXT DEFAULT '[]',
           terms TEXT DEFAULT '[]',
           pronounMatrix TEXT DEFAULT '[]',
@@ -242,7 +350,7 @@ async function callGemini(keys, model, prompt, systemInstruction = '') {
     throw new Error('Chưa có Gemini API Key nào được cài đặt. Hãy vào "Quản lý API Key" để thêm key.');
   }
 
-  const targetModel = model || 'gemini-2.0-flash';
+  const targetModel = normalizeModel(model);
   let lastError = null;
 
   for (let i = 0; i < keys.length; i++) {
@@ -692,6 +800,83 @@ export async function onRequest(context) {
       return json({ success: true, count: matches.length });
     }
 
+    // Upload file: /api/projects/:id/upload
+    const uploadMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/upload$/);
+    if (uploadMatch && method === 'POST') {
+      const projectId = uploadMatch[1];
+      const formData = await request.formData();
+      const file = formData.get('file');
+      const singleChapter = formData.get('singleChapter') === 'true';
+
+      if (!file) return errorJson('Vui lòng chọn file tải lên', 400);
+
+      const fileName = file.name || 'document.txt';
+      const arrayBuffer = await file.arrayBuffer();
+      let rawText = '';
+
+      if (fileName.toLowerCase().endsWith('.docx') || fileName.toLowerCase().endsWith('.doc')) {
+        try {
+          rawText = await extractDocxText(arrayBuffer);
+        } catch (e) {
+          console.warn('Docx extract error, fallback:', e.message);
+          rawText = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+        }
+      } else if (fileName.toLowerCase().endsWith('.epub')) {
+        rawText = await extractEpubText(arrayBuffer);
+      } else {
+        try {
+          const dec = new TextDecoder('utf-8', { fatal: true });
+          rawText = dec.decode(arrayBuffer);
+        } catch (e) {
+          try {
+            const decGb = new TextDecoder('gb18030');
+            rawText = decGb.decode(arrayBuffer);
+          } catch (e2) {
+            rawText = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+          }
+        }
+      }
+
+      if (!rawText || !rawText.trim()) {
+        return errorJson('File trống hoặc không thể trích xuất văn bản', 400);
+      }
+
+      let matches = [];
+      if (singleChapter) {
+        const title = fileName.replace(/\.[^/.]+$/, "") || 'Chương 1';
+        matches.push({ title, content: rawText.trim() });
+      } else {
+        const chapterRegex = /(?:^|\n)(第[\d一二三四五六七八九十百千万]+[章回节]|Chapter\s*\d+|Chương\s*\d+|===[^\n]+===)(.*?)(?=(?:^|\n)(?:第[\d一二三四五六七八九十百千万]+[章回节]|Chapter\s*\d+|Chương\s*\d+|===[^\n]+===)|$)/gis;
+        let match;
+        while ((match = chapterRegex.exec(rawText)) !== null) {
+          matches.push({ title: match[1].trim(), content: match[2].trim() });
+        }
+        if (matches.length === 0 && rawText.trim()) {
+          const title = fileName.replace(/\.[^/.]+$/, "") || 'Chương 1';
+          matches.push({ title, content: rawText.trim() });
+        }
+      }
+
+      const now = new Date().toISOString();
+      const countRow = await db.prepare("SELECT COUNT(*) as count FROM chapters WHERE projectId = ?").bind(projectId).first();
+      const startIndex = countRow ? Number(countRow.count || 0) : 0;
+
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < matches.length; i += CHUNK_SIZE) {
+        const chunk = matches.slice(i, i + CHUNK_SIZE);
+        const stmts = chunk.map((m, idx) => {
+          const chId = crypto.randomUUID();
+          return db.prepare(`
+            INSERT INTO chapters (id, projectId, title, chapterIndex, originalText, status, qaReport, issues, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, 'pending', '{}', '[]', ?, ?)
+          `).bind(chId, projectId, m.title, startIndex + i + idx, m.content, now, now);
+        });
+        await db.batch(stmts);
+      }
+
+      return json({ success: true, count: matches.length });
+    }
+
     // Translate chapter: /api/projects/:id/translate-chapter/:chapterId
     const transMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/translate-chapter\/([^\/]+)$/);
     if (transMatch && method === 'POST') {
@@ -726,7 +911,7 @@ export async function onRequest(context) {
       sysPrompt += `\nQUY TẮC:\n- Dịch đầy đủ 100%, không tóm tắt hay lược bỏ câu.\n- Giữ nguyên cấu trúc phân đoạn và ngắt dòng của bản gốc.\n- Chỉ xuất ra duy nhất bản dịch tiếng Việt.`;
 
       const prompt = `Dịch văn bản sau sang tiếng Việt:\n\n${chapter.originalText}`;
-      const translated = await callGemini(keys, project.model || 'gemini-2.0-flash', prompt, sysPrompt);
+      const translated = await callGemini(keys, project.model || 'gemini-3.6-flash', prompt, sysPrompt);
 
       const qa = auditText(translated, chapter.originalText, { characters, terms, pronounMatrix });
       const now = new Date().toISOString();
@@ -846,7 +1031,7 @@ export async function onRequest(context) {
         `ĐOẠN CẦN SỬA: "${selectedText}"\n\n` +
         `Chỉ trả về đoạn văn bản đã sửa, không thêm bất kỳ lời dẫn nào:`;
 
-      const fixedSnippet = await callGemini(keys, project?.model || 'gemini-2.0-flash', fixPrompt);
+      const fixedSnippet = await callGemini(keys, project?.model || 'gemini-3.6-flash', fixPrompt);
       const cleaned = fixedSnippet.trim().replace(/^["']|["']$/g, '');
 
       let currentFull = fullText || chapter.translatedText || '';
@@ -894,7 +1079,7 @@ export async function onRequest(context) {
     if (pathname === '/api/quick-translate' && method === 'POST') {
       const body = await request.json();
       const keys = await getApiKeys(db, env);
-      const result = await callGemini(keys, body.model || 'gemini-2.0-flash', `Dịch sang tiếng Việt tự nhiên:\n\n${body.text}`);
+      const result = await callGemini(keys, body.model || 'gemini-3.6-flash', `Dịch sang tiếng Việt tự nhiên:\n\n${body.text}`);
       return json({ translatedText: result });
     }
 

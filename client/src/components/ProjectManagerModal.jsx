@@ -273,8 +273,10 @@ export default function ProjectManagerModal({
                   >
                     <option value="gemini-3.6-flash">Gemini 3.6 Flash (Nhanh & Chuẩn nhất)</option>
                     <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Tiết kiệm Quota)</option>
-                    <option value="gemini-3.5-pro">Gemini 3.5 Pro (Văn học cao cấp)</option>
+                    <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Rất nhanh)</option>
+                    <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
                     <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Văn học cao cấp)</option>
                   </select>
                 </div>
               </div>

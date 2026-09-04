@@ -7,7 +7,7 @@ export default function KeyManagerModal({ isOpen, onClose, onKeysUpdated }) {
   const [testingId, setTestingId] = useState(null);
   const [testResult, setTestResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [testModel, setTestModel] = useState('gemini-2.0-flash');
+  const [testModel, setTestModel] = useState('gemini-3.6-flash');
 
   useEffect(() => {
     if (isOpen) {
@@ -175,15 +175,17 @@ export default function KeyManagerModal({ isOpen, onClose, onKeysUpdated }) {
                 list="modal-test-models"
                 value={testModel}
                 onChange={e => setTestModel(e.target.value.trim())}
-                placeholder="gemini-2.0-flash..."
+                placeholder="gemini-3.6-flash..."
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500"
               />
               <datalist id="modal-test-models">
-                <option value="gemini-2.0-flash" />
-                <option value="gemini-1.5-flash" />
-                <option value="gemini-1.5-pro" />
+                <option value="gemini-3.6-flash" />
+                <option value="gemini-3.5-flash-lite" />
+                <option value="gemini-3.1-flash-lite" />
+                <option value="gemini-3.5-flash" />
                 <option value="gemini-2.5-flash" />
-                <option value="gemini-2.0-flash-lite" />
+                <option value="gemini-2.5-flash-lite" />
+                <option value="gemini-2.5-pro" />
               </datalist>
             </div>
           </div>

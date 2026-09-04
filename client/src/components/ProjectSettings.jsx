@@ -99,22 +99,23 @@ export default function ProjectSettings({ project, onUpdateProject }) {
               list="gemini-models-list"
               value={formData.model}
               onChange={e => setFormData({ ...formData, model: e.target.value.trim() })}
-              placeholder="Nhập tên model, ví dụ: gemini-2.0-flash, gemini-1.5-flash, gemini-2.5-flash..."
+              placeholder="Nhập tên model, ví dụ: gemini-3.6-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite..."
               className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
             />
             <datalist id="gemini-models-list">
-              <option value="gemini-2.0-flash" />
-              <option value="gemini-1.5-flash" />
-              <option value="gemini-1.5-pro" />
+              <option value="gemini-3.6-flash" />
+              <option value="gemini-3.5-flash-lite" />
+              <option value="gemini-3.1-flash-lite" />
+              <option value="gemini-3.5-flash" />
               <option value="gemini-2.5-flash" />
-              <option value="gemini-2.0-flash-lite" />
-              <option value="gemini-2.0-flash-exp" />
+              <option value="gemini-2.5-flash-lite" />
+              <option value="gemini-2.5-pro" />
             </datalist>
 
             {/* Quick Suggestion Chips */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-[11px] text-slate-500">Gợi ý nhanh:</span>
-              {['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'].map(m => (
+              {['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'].map(m => (
                 <button
                   key={m}
                   type="button"
