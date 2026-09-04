@@ -500,6 +500,60 @@ async function callGemini(keys, model, prompt, systemInstruction = '') {
   throw lastError || new Error('Tất cả API keys đều bị lỗi hoặc hết hạn mức.');
 }
 
+// Helper: Auto-extract characters, dialogue pronoun matrix, and terms
+async function autoExtractEntities(keys, model, text, genre) {
+  if (!text || !text.trim()) return { characters: [], pronounMatrix: [], terms: [] };
+  const prompt = `Bạn là chuyên gia phân tích văn bản tiểu thuyết Trung Quốc và biên tập dịch thuật tiếng Việt hàng đầu.
+Nhiệm vụ: Hãy phân tích đoạn văn bản tiểu thuyết sau (thể loại: ${genre || 'Tiên Hiệp / Huyền Huyễn'}), trích xuất toàn bộ:
+1. Danh sách Nhân vật:
+   - zh: Tên tiếng Trung
+   - vi: Tên Hán Việt chuẩn
+   - gender: Giới tính ("Nam" hoặc "Nữ")
+   - narrativePronoun: Ngôi xưng của người dẫn chuyện khi miêu tả nhân vật này (Nam xưng "hắn", Nữ xưng "nàng" hoặc "cô")
+   - role: Thân phận / Vai vế (nhân vật chính, sư phụ, đệ tử, v.v.)
+   - notes: Ghi chú quan hệ
+2. Ma trận Xưng hô: Giữa các cặp nhân vật tương tác / đối thoại trực tiếp:
+   - speakerZh: Tên Trung người nói
+   - listenerZh: Tên Trung người nghe
+   - speakerCallsSelf: Người nói tự xưng là gì (ta, đệ tử, vi sư, lão phu, tại hạ...)
+   - speakerCallsListener: Người nói gọi người nghe là gì (ngươi, sư tôn, đồ nhi, các hạ, đạo hữu...)
+   - notes: Thái độ (tôn kính, thân mật, thù địch...)
+3. Thuật ngữ quan trọng: Tông môn, cảnh giới, địa danh, pháp bảo.
+
+Văn bản mẫu:
+"""
+${text.slice(0, 8000)}
+"""
+
+Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown code block \`\`\`json hoặc bất kỳ lời dẫn nào):
+{
+  "characters": [
+    { "zh": "tên Trung", "vi": "tên Hán Việt", "gender": "Nam", "narrativePronoun": "hắn", "role": "nhân vật chính", "notes": "" }
+  ],
+  "pronounMatrix": [
+    { "speakerZh": "tên người nói", "listenerZh": "tên người nghe", "speakerCallsSelf": "ta", "speakerCallsListener": "ngươi", "notes": "" }
+  ],
+  "terms": [
+    { "zh": "từ Trung", "vi": "dịch Hán Việt", "category": "Thuật ngữ" }
+  ]
+}`;
+
+  try {
+    const raw = await callGemini(keys, model, prompt);
+    const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
+    return {
+      characters: Array.isArray(parsed.characters) ? parsed.characters : [],
+      pronounMatrix: Array.isArray(parsed.pronounMatrix) ? parsed.pronounMatrix : [],
+      terms: Array.isArray(parsed.terms) ? parsed.terms : []
+    };
+  } catch (e) {
+    console.error('Error autoExtractEntities:', e);
+    return { characters: [], pronounMatrix: [], terms: [] };
+  }
+}
+
 // MAIN Cloudflare Pages Function Handler
 export async function onRequest(context) {
   const { request, env } = context;
@@ -1010,6 +1064,161 @@ export async function onRequest(context) {
       return json({ success: true, count: parts.length, message: `Đã tách thành công thành ${parts.length} chương!` });
     }
 
+    // Auto-scan characters & pronoun matrix: /api/projects/:id/auto-scan
+    const autoScanMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/auto-scan$/);
+    if (autoScanMatch && method === 'POST') {
+      const projectId = autoScanMatch[1];
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      let body = {};
+      try { body = await request.json(); } catch (e) {}
+
+      let sample = body.sampleText || '';
+      if (!sample) {
+        const { results: chaps } = await db.prepare("SELECT title, originalText FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC LIMIT 3").bind(projectId).all();
+        if (chaps && chaps.length > 0) {
+          sample = chaps.map(c => `${c.title}\n${c.originalText}`).join('\n\n');
+        }
+      }
+
+      if (!sample || !sample.trim()) {
+        return errorJson('Chưa có chương truyện nào trong dự án để AI phân tích!', 400);
+      }
+
+      const keys = await getApiKeys(db, env);
+      const extracted = await autoExtractEntities(keys, project.model || 'gemini-3.6-flash', sample, project.genre);
+
+      const existingChars = JSON.parse(project.characters || '[]');
+      const existingPronouns = JSON.parse(project.pronounMatrix || '[]');
+      const existingTerms = JSON.parse(project.terms || '[]');
+
+      const mergedChars = [...existingChars];
+      for (const c of extracted.characters) {
+        if (c.zh && !mergedChars.some(x => x.zh === c.zh)) {
+          mergedChars.push({ id: crypto.randomUUID(), ...c });
+        }
+      }
+
+      const mergedPronouns = [...existingPronouns];
+      for (const p of extracted.pronounMatrix) {
+        if (p.speakerZh && p.listenerZh && !mergedPronouns.some(x => x.speakerZh === p.speakerZh && x.listenerZh === p.listenerZh)) {
+          mergedPronouns.push({ id: crypto.randomUUID(), ...p });
+        }
+      }
+
+      const mergedTerms = [...existingTerms];
+      for (const t of extracted.terms) {
+        if (t.zh && !mergedTerms.some(x => x.zh === t.zh)) {
+          mergedTerms.push({ id: crypto.randomUUID(), ...t });
+        }
+      }
+
+      const now = new Date().toISOString();
+      await db.prepare(`
+        UPDATE projects
+        SET characters = ?, pronounMatrix = ?, terms = ?, updatedAt = ?
+        WHERE id = ?
+      `).bind(
+        JSON.stringify(mergedChars),
+        JSON.stringify(mergedPronouns),
+        JSON.stringify(mergedTerms),
+        now,
+        projectId
+      ).run();
+
+      const updatedProj = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      const { results: allChaps } = await db.prepare("SELECT * FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC").bind(projectId).all();
+
+      const projectData = {
+        ...updatedProj,
+        characters: mergedChars,
+        pronounMatrix: mergedPronouns,
+        terms: mergedTerms,
+        settings: JSON.parse(updatedProj.settings || '{}'),
+        chapters: (allChaps || []).map(c => ({
+          ...c,
+          qaReport: JSON.parse(c.qaReport || '{}'),
+          issues: JSON.parse(c.issues || '[]')
+        }))
+      };
+
+      return json({
+        success: true,
+        added: {
+          characters: mergedChars.length - existingChars.length,
+          pronounMatrix: mergedPronouns.length - existingPronouns.length,
+          terms: mergedTerms.length - existingTerms.length
+        },
+        project: projectData
+      });
+    }
+
+    // Import Vietphrase: /api/projects/:id/import-vietphrase
+    const importVpMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/import-vietphrase$/);
+    if (importVpMatch && method === 'POST') {
+      const projectId = importVpMatch[1];
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const body = await request.json();
+      const content = body.content || '';
+      const existingTerms = JSON.parse(project.terms || '[]');
+      const lines = content.split('\n');
+      let count = 0;
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('//') || line.startsWith('#')) continue;
+        const [mainPart, notes] = line.split('#');
+        const [zh, vi] = mainPart.split('=');
+        if (zh && vi) {
+          const cleanZh = zh.trim();
+          const cleanVi = vi.trim();
+          if (!existingTerms.some(t => t.zh === cleanZh)) {
+            existingTerms.push({
+              id: crypto.randomUUID(),
+              zh: cleanZh,
+              vi: cleanVi,
+              category: notes ? notes.trim() : 'Vietphrase'
+            });
+            count++;
+          }
+        }
+      }
+
+      const now = new Date().toISOString();
+      await db.prepare("UPDATE projects SET terms = ?, updatedAt = ? WHERE id = ?").bind(JSON.stringify(existingTerms), now, projectId).run();
+      return json({ success: true, importedCount: count, terms: existingTerms });
+    }
+
+    // Export Vietphrase: /api/projects/:id/export-vietphrase
+    const exportVpMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/export-vietphrase$/);
+    if (exportVpMatch && method === 'GET') {
+      const projectId = exportVpMatch[1];
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const characters = JSON.parse(project.characters || '[]');
+      const terms = JSON.parse(project.terms || '[]');
+
+      let lines = ['# === DANH TỪ RIÊNG & NHÂN VẬT (DICHTRUYENPRO) ==='];
+      for (const c of characters) {
+        lines.push(`${c.zh}=${c.vi}#Nhân vật (${c.gender || 'chưa rõ'}) - ${c.role || ''}`);
+      }
+      lines.push('\n# === THUẬT NGỮ & ĐỊA DANH ===');
+      for (const t of terms) {
+        lines.push(`${t.zh}=${t.vi}#${t.category || 'Thuật ngữ'}`);
+      }
+
+      return new Response(lines.join('\n'), {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Disposition': `attachment; filename="Names_${projectId.slice(0, 8)}.txt"`
+        }
+      });
+    }
+
     // Translate chapter: /api/projects/:id/translate-chapter/:chapterId
     const transMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/translate-chapter\/([^\/]+)$/);
     if (transMatch && method === 'POST') {
@@ -1020,9 +1229,34 @@ export async function onRequest(context) {
       if (!project || !chapter) return errorJson('Không tìm thấy dự án hoặc chương', 404);
 
       const keys = await getApiKeys(db, env);
-      const characters = JSON.parse(project.characters || '[]');
-      const terms = JSON.parse(project.terms || '[]');
-      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+      let characters = JSON.parse(project.characters || '[]');
+      let terms = JSON.parse(project.terms || '[]');
+      let pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+
+      // AUTO-SCAN IF EMPTY: If project has no characters or pronoun matrix yet, auto-extract from this chapter!
+      let entitiesExtracted = false;
+      if (characters.length === 0 && pronounMatrix.length === 0 && chapter.originalText) {
+        try {
+          const autoExtracted = await autoExtractEntities(keys, project.model || 'gemini-3.6-flash', chapter.originalText, project.genre);
+          if (autoExtracted.characters.length > 0 || autoExtracted.pronounMatrix.length > 0) {
+            characters = autoExtracted.characters.map(c => ({ id: crypto.randomUUID(), ...c }));
+            pronounMatrix = autoExtracted.pronounMatrix.map(p => ({ id: crypto.randomUUID(), ...p }));
+            terms = [
+              ...terms,
+              ...autoExtracted.terms.filter(t => !terms.some(x => x.zh === t.zh)).map(t => ({ id: crypto.randomUUID(), ...t }))
+            ];
+            const nowTime = new Date().toISOString();
+            await db.prepare(`
+              UPDATE projects
+              SET characters = ?, pronounMatrix = ?, terms = ?, updatedAt = ?
+              WHERE id = ?
+            `).bind(JSON.stringify(characters), JSON.stringify(pronounMatrix), JSON.stringify(terms), nowTime, projectId).run();
+            entitiesExtracted = true;
+          }
+        } catch (e) {
+          console.warn('Auto extraction during translation warning:', e.message);
+        }
+      }
 
       let sysPrompt = `Bạn là dịch giả tiểu thuyết chuyên nghiệp dịch từ tiếng Trung sang tiếng Việt.\n`;
       if (project.toneGuidance) sysPrompt += `\nĐẶC TẢ VĂN PHONG:\n${project.toneGuidance}\n`;
@@ -1031,6 +1265,13 @@ export async function onRequest(context) {
         sysPrompt += `\nNHÂN VẬT & NGÔI DẪN CHUYỆN BẮT BUỘC:\n`;
         characters.forEach(c => {
           sysPrompt += `- ${c.zh} → ${c.vi} (Giới tính: ${c.gender || 'Chưa rõ'}). Ngôi dẫn truyện luôn xưng: "${c.narrativePronoun || 'hắn'}". ${c.notes || ''}\n`;
+        });
+      }
+
+      if (pronounMatrix.length > 0) {
+        sysPrompt += `\nMA TRẬN XƯNG HÔ ĐỐI THOẠI BẮT BUỘC:\n`;
+        pronounMatrix.forEach(p => {
+          sysPrompt += `- Khi ${p.speakerZh} nói chuyện với ${p.listenerZh}: tự xưng "${p.speakerCallsSelf}", gọi đối phương là "${p.speakerCallsListener}". ${p.notes || ''}\n`;
         });
       }
 
@@ -1070,13 +1311,28 @@ export async function onRequest(context) {
       ).run();
 
       const updatedChap = await db.prepare("SELECT * FROM chapters WHERE id = ?").bind(chapterId).first();
+
+      let updatedProjectData = null;
+      if (entitiesExtracted) {
+        const p = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+        updatedProjectData = {
+          ...p,
+          characters,
+          pronounMatrix,
+          terms,
+          settings: JSON.parse(p?.settings || '{}')
+        };
+      }
+
       return json({
         success: true,
         chapter: {
           ...updatedChap,
           qaReport: qa,
           issues: qa.issues.map(i => i.message)
-        }
+        },
+        project: updatedProjectData,
+        updatedProject: updatedProjectData
       });
     }
 

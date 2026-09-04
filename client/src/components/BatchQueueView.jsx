@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RefreshCw, FileText, CheckCircle2, AlertCircle, Clock, Trash2, Eye, Plus, ChevronDown, ChevronUp, Terminal, ShieldCheck, Scissors, X } from 'lucide-react';
 import PronounInspectorModal from './PronounInspectorModal';
 
@@ -14,33 +14,8 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
   const [splitPatternInput, setSplitPatternInput] = useState('');
   const [splitting, setSplitting] = useState(false);
 
+  const stopQueueRef = useRef(false);
   const chapters = project?.chapters || [];
-
-  // Poll queue status while queue is running
-  useEffect(() => {
-    let timer = null;
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`/api/projects/${project.id}/queue/status`);
-        const data = await res.json();
-        setQueueStatus(data);
-
-        // If queue is running, refresh project data periodically to show updated chapters
-        if (data.isRunning) {
-          const projRes = await fetch(`/api/projects/${project.id}`);
-          const projData = await projRes.json();
-          if (projData.project) onUpdateProject(projData.project);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    checkStatus();
-    timer = setInterval(checkStatus, 2500);
-
-    return () => clearInterval(timer);
-  }, [project.id]);
 
   const handleToggleSelectAll = () => {
     if (selectedIds.length === filteredChapters.length) {
@@ -59,24 +34,93 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
   };
 
   const handleStartQueue = async (targetIds = null) => {
-    try {
-      await fetch(`/api/projects/${project.id}/queue/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chapterIds: targetIds })
-      });
-      setShowLogs(true);
-    } catch (e) {
-      alert('Lỗi khởi động hàng đợi: ' + e.message);
+    const listToTranslate = chapters.filter(c => {
+      if (targetIds && Array.isArray(targetIds) && targetIds.length > 0) return targetIds.includes(c.id);
+      return c.status === 'pending' || !c.status || c.status === 'error';
+    });
+
+    if (listToTranslate.length === 0) {
+      alert('Tất cả các chương đã hoàn thành dịch!');
+      return;
     }
+
+    stopQueueRef.current = false;
+    setShowLogs(true);
+    setQueueStatus({
+      isRunning: true,
+      completedCount: 0,
+      totalCount: listToTranslate.length,
+      logs: [`[${new Date().toLocaleTimeString()}] 🚀 Bắt đầu dịch hàng loạt ${listToTranslate.length} chương...`]
+    });
+
+    let currentProj = { ...project };
+    let currentChaps = [...chapters];
+
+    for (let i = 0; i < listToTranslate.length; i++) {
+      if (stopQueueRef.current) {
+        setQueueStatus(prev => ({
+          ...prev,
+          isRunning: false,
+          currentChapterId: null,
+          logs: [...(prev.logs || []), `[${new Date().toLocaleTimeString()}] ⏸ Đã tạm dừng hàng đợi dịch.`]
+        }));
+        break;
+      }
+
+      const ch = listToTranslate[i];
+      setTranslatingSingleId(ch.id);
+      setQueueStatus(prev => ({
+        ...prev,
+        isRunning: true,
+        currentChapterId: ch.id,
+        logs: [...(prev.logs || []), `[${new Date().toLocaleTimeString()}] ⏳ [${i + 1}/${listToTranslate.length}] Đang dịch: ${ch.title}...`]
+      }));
+
+      try {
+        const res = await fetch(`/api/projects/${project.id}/translate-chapter/${ch.id}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Lỗi dịch chương');
+
+        currentChaps = currentChaps.map(c => c.id === ch.id ? data.chapter : c);
+        if (data.updatedProject || data.project) {
+          currentProj = { ...(data.updatedProject || data.project), chapters: currentChaps };
+        } else {
+          currentProj = { ...currentProj, chapters: currentChaps };
+        }
+        onUpdateProject(currentProj);
+
+        setQueueStatus(prev => ({
+          ...prev,
+          completedCount: (prev.completedCount || 0) + 1,
+          logs: [...(prev.logs || []), `[${new Date().toLocaleTimeString()}] ✓ [${i + 1}/${listToTranslate.length}] Hoàn thành: ${ch.title}`]
+        }));
+
+        // Anti rate-limit delay between chapters
+        await new Promise(r => setTimeout(r, 1500));
+      } catch (err) {
+        console.error('Lỗi dịch chương:', err);
+        setQueueStatus(prev => ({
+          ...prev,
+          logs: [...(prev.logs || []), `[${new Date().toLocaleTimeString()}] ✗ Lỗi tại ${ch.title}: ${err.message}`]
+        }));
+      } finally {
+        setTranslatingSingleId(null);
+      }
+    }
+
+    setQueueStatus(prev => ({ ...prev, isRunning: false, currentChapterId: null }));
   };
 
-  const handleStopQueue = async () => {
-    try {
-      await fetch(`/api/projects/${project.id}/queue/stop`, { method: 'POST' });
-    } catch (e) {
-      alert('Lỗi dừng hàng đợi: ' + e.message);
-    }
+  const handleStopQueue = () => {
+    stopQueueRef.current = true;
+    setQueueStatus(prev => ({
+      ...prev,
+      isRunning: false,
+      currentChapterId: null,
+      logs: [...(prev.logs || []), `[${new Date().toLocaleTimeString()}] ⏸ Đang gửi lệnh tạm dừng...`]
+    }));
   };
 
   const handleTranslateSingle = async (chapterId) => {
@@ -88,9 +132,13 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // Update chapter in project
+      // Update chapter in project & update project entities if returned
       const updated = chapters.map(c => c.id === chapterId ? data.chapter : c);
-      onUpdateProject({ ...project, chapters: updated });
+      if (data.updatedProject || data.project) {
+        onUpdateProject({ ...(data.updatedProject || data.project), chapters: updated });
+      } else {
+        onUpdateProject({ ...project, chapters: updated });
+      }
     } catch (e) {
       alert('Lỗi dịch chương: ' + e.message);
     } finally {
