@@ -17,6 +17,82 @@ function errorJson(message, status = 500) {
   return json({ error: message, message }, status);
 }
 
+// Unicode-aware word boundary for Vietnamese (diacritics support)
+const WORD_CHAR = "A-Za-z0-9_\\u00C0-\\u1EFF";
+
+function escapeRegex(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function wholeWordRegex(term) {
+  const escaped = escapeRegex(term);
+  return new RegExp(`(?<![${WORD_CHAR}])(?:${escaped})(?![${WORD_CHAR}])`, "gu");
+}
+
+// Strips the modern-Vietnamese polite sentence-final particle "ạ" in ancient novels
+function stripPoliteA(text) {
+  if (!text) return text;
+  const notGluedToWord = `(?<![${WORD_CHAR}])`;
+  return text
+    .replace(new RegExp(`[ \\t]*${notGluedToWord}ạ(?=[.!?,;:…"'”])`, "gu"), "")
+    .replace(new RegExp(`[ \\t]*${notGluedToWord}ạ$`, "gmu"), "");
+}
+
+// Apply a list of {find, replace} rules to text with Unicode-aware wholeWord support
+function applyReplacements(text, rules, wholeWord = false) {
+  let result = text || "";
+  let count = 0;
+  for (const { find, replace } of (rules || [])) {
+    if (!find) continue;
+    if (wholeWord) {
+      const re = wholeWordRegex(find);
+      const matches = result.match(re);
+      if (matches) {
+        count += matches.length;
+        result = result.replace(re, replace || "");
+      }
+    } else {
+      const parts = result.split(find);
+      count += parts.length - 1;
+      result = parts.join(replace || "");
+    }
+  }
+  return { text: result, count };
+}
+
+// Scan preview matches without modifying text
+function previewReplacements(text, rules, wholeWord = false) {
+  let count = 0;
+  const samples = [];
+  for (const { find } of (rules || [])) {
+    if (!find) continue;
+    if (wholeWord) {
+      const re = wholeWordRegex(find);
+      const matches = [...text.matchAll(re)];
+      count += matches.length;
+      matches.slice(0, 3).forEach(m => {
+        const start = Math.max(0, m.index - 30);
+        const end = Math.min(text.length, m.index + m[0].length + 30);
+        samples.push(text.slice(start, end).trim());
+      });
+    } else {
+      let from = 0;
+      while (from < text.length) {
+        const idx = text.indexOf(find, from);
+        if (idx === -1) break;
+        count++;
+        if (samples.length < 3) {
+          const start = Math.max(0, idx - 30);
+          const end = Math.min(text.length, idx + find.length + 30);
+          samples.push(text.slice(start, end).trim());
+        }
+        from = idx + find.length;
+      }
+    }
+  }
+  return { count, samples };
+}
+
 // Extract pronoun pairs and detected characters from chapter text
 function extractPronounAudit(text, characters = [], pronounMatrix = []) {
   if (!text) return { charactersDetected: [], pronounPairs: [] };
@@ -479,6 +555,9 @@ function autoFixContent(text, context = {}) {
   // 3. Common specific fixes
   fixed = fixed.replace(/của tôi ấy mà/g, 'của thảo dân ấy mà');
   fixed = fixed.replace(/đại nhân của tôi/g, 'đại nhân của ta');
+
+  // 4. Strip modern polite "ạ" in ancient context
+  fixed = stripPoliteA(fixed);
 
   // Balance unpaired quotes
   const opens = (fixed.match(/“/g) || []).length;
@@ -2106,6 +2185,348 @@ export async function onRequest(context) {
         message: `Đã chuẩn hóa và làm sạch thành công ${fixedCount} chương! Đã triệt tiêu ${totalHanziCleaned} chữ Hán tồn đọng.`,
         fixedChaptersCount: fixedCount,
         totalHanziCleaned
+      });
+    }
+
+    // Batch Replace Preview: /api/projects/:id/batch-replace/preview
+    const batchReplacePrevMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/batch-replace\/preview$/);
+    if (batchReplacePrevMatch && method === 'POST') {
+      const [_, projectId] = batchReplacePrevMatch;
+      const body = await request.json();
+      const { rules = [], scope = 'story', chapterId = null, wholeWord = false } = body;
+
+      const validRules = (rules || []).filter(r => String(r.find || '').trim().length > 0);
+      if (!validRules.length) return json({ success: true, totalMatches: 0, chapterCount: 0, chapterMatches: [] });
+
+      let query = "SELECT id, chapterIndex, title, translatedTitle, translatedText FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL)";
+      const params = [projectId];
+      if (scope === 'chapter' && chapterId) {
+        query += " AND id = ?";
+        params.push(chapterId);
+      }
+      query += " ORDER BY chapterIndex ASC";
+
+      const { results: chapters } = await db.prepare(query).bind(...params).all();
+
+      let totalMatches = 0;
+      const chapterMatches = [];
+
+      for (const ch of (chapters || [])) {
+        const text = ch.translatedText || '';
+        if (!text) continue;
+        const prev = previewReplacements(text, validRules, wholeWord);
+        if (prev.count > 0) {
+          totalMatches += prev.count;
+          chapterMatches.push({
+            chapterId: ch.id,
+            chapterIndex: ch.chapterIndex,
+            title: ch.translatedTitle || ch.title,
+            count: prev.count,
+            samples: prev.samples
+          });
+        }
+      }
+
+      return json({
+        success: true,
+        totalMatches,
+        chapterCount: chapterMatches.length,
+        chapterMatches
+      });
+    }
+
+    // Batch Replace Apply: /api/projects/:id/batch-replace/apply
+    const batchReplaceApplyMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/batch-replace\/apply$/);
+    if (batchReplaceApplyMatch && method === 'POST') {
+      const [_, projectId] = batchReplaceApplyMatch;
+      const body = await request.json();
+      const { rules = [], scope = 'story', chapterId = null, wholeWord = false } = body;
+
+      const validRules = (rules || []).filter(r => String(r.find || '').trim().length > 0);
+      if (!validRules.length) return errorJson('Không có quy tắc thay thế hợp lệ', 400);
+
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      let query = "SELECT id, chapterIndex, title, originalText, translatedTitle, translatedText, qaReport, issues, chineseCharCount FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL)";
+      const params = [projectId];
+      if (scope === 'chapter' && chapterId) {
+        query += " AND id = ?";
+        params.push(chapterId);
+      }
+      query += " ORDER BY chapterIndex ASC";
+
+      const { results: chapters } = await db.prepare(query).bind(...params).all();
+
+      const characters = JSON.parse(project.characters || '[]');
+      const terms = JSON.parse(project.terms || '[]');
+      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+      const settings = JSON.parse(project.settings || '{}');
+
+      // Save undo snapshot
+      const undoRows = (chapters || []).map(ch => ({
+        id: ch.id,
+        translatedText: ch.translatedText,
+        translatedTitle: ch.translatedTitle,
+        qaReport: ch.qaReport,
+        issues: ch.issues,
+        chineseCharCount: ch.chineseCharCount
+      }));
+
+      settings.lastBatchReplaceUndo = {
+        timestamp: new Date().toISOString(),
+        scope,
+        rules: validRules,
+        rows: undoRows
+      };
+
+      await db.prepare("UPDATE projects SET settings = ? WHERE id = ?").bind(JSON.stringify(settings), projectId).run();
+
+      let totalReplaced = 0;
+      let chaptersUpdated = 0;
+      const now = new Date().toISOString();
+
+      for (const ch of (chapters || [])) {
+        const origText = ch.translatedText || '';
+        const rep = applyReplacements(origText, validRules, wholeWord);
+        if (rep.count > 0) {
+          totalReplaced += rep.count;
+          chaptersUpdated++;
+
+          const cleanedText = autoFixContent(rep.text);
+          const qa = auditText(cleanedText, ch.originalText, { characters, terms, pronounMatrix });
+
+          await db.prepare(`
+            UPDATE chapters
+            SET translatedText = ?,
+                qaReport = ?,
+                issues = ?,
+                chineseCharCount = ?,
+                updatedAt = ?
+            WHERE id = ?
+          `).bind(
+            cleanedText,
+            JSON.stringify(qa),
+            JSON.stringify(qa.issues.map(i => i.message)),
+            qa.stats.chineseCharCount,
+            now,
+            ch.id
+          ).run();
+        }
+      }
+
+      return json({
+        success: true,
+        message: `Đã thay thế thành công ${totalReplaced} vị trí trong ${chaptersUpdated} chương!`,
+        totalReplaced,
+        chaptersUpdated,
+        canUndo: true
+      });
+    }
+
+    // Batch Replace Undo: /api/projects/:id/batch-replace/undo
+    const batchReplaceUndoMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/batch-replace\/undo$/);
+    if (batchReplaceUndoMatch && method === 'POST') {
+      const [_, projectId] = batchReplaceUndoMatch;
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const settings = JSON.parse(project.settings || '{}');
+      const undo = settings.lastBatchReplaceUndo || settings.lastStoryQaUndo;
+      if (!undo || !undo.rows || !undo.rows.length) {
+        return errorJson('Không có thao tác nào để hoàn tác!', 400);
+      }
+
+      const now = new Date().toISOString();
+      for (const row of undo.rows) {
+        await db.prepare(`
+          UPDATE chapters
+          SET translatedText = ?,
+              translatedTitle = ?,
+              qaReport = ?,
+              issues = ?,
+              chineseCharCount = ?,
+              updatedAt = ?
+          WHERE id = ?
+        `).bind(
+          row.translatedText,
+          row.translatedTitle,
+          row.qaReport,
+          row.issues,
+          row.chineseCharCount,
+          now,
+          row.id
+        ).run();
+      }
+
+      delete settings.lastBatchReplaceUndo;
+      delete settings.lastStoryQaUndo;
+      await db.prepare("UPDATE projects SET settings = ? WHERE id = ?").bind(JSON.stringify(settings), projectId).run();
+
+      return json({
+        success: true,
+        message: `Đã hoàn tác thành công cho ${undo.rows.length} chương!`,
+        restoredCount: undo.rows.length
+      });
+    }
+
+    // Story-wide QA Scan: /api/projects/:id/story-qa
+    const storyQaMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/story-qa$/);
+    if (storyQaMatch && method === 'GET') {
+      const [_, projectId] = storyQaMatch;
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const characters = JSON.parse(project.characters || '[]');
+      const terms = JSON.parse(project.terms || '[]');
+      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+      const settings = JSON.parse(project.settings || '{}');
+
+      const { results: chapters } = await db.prepare(
+        "SELECT id, chapterIndex, title, translatedTitle, translatedText, qaReport FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL) ORDER BY chapterIndex ASC"
+      ).bind(projectId).all();
+
+      const groupMap = new Map();
+      let totalIssues = 0;
+      const chapterSummaries = [];
+
+      for (const ch of (chapters || [])) {
+        const text = ch.translatedText || '';
+        if (!text) continue;
+        const qa = auditText(text, '', { characters, terms, pronounMatrix });
+        let chIssueCount = 0;
+
+        for (const issue of qa.issues) {
+          totalIssues++;
+          chIssueCount++;
+
+          const val = issue.targetSnippet || issue.message;
+          const key = `${issue.type}:${val}`;
+          if (!groupMap.has(key)) {
+            groupMap.set(key, {
+              key,
+              type: issue.type,
+              title: issue.title,
+              value: val,
+              severity: issue.severity,
+              instruction: issue.instruction || '',
+              replacement: issue.type === 'untranslated_chinese' && SINO_VIET_MAP[val] ? SINO_VIET_MAP[val] : '',
+              isSafe: issue.type === 'quotation_balance' || (issue.type === 'untranslated_chinese' && Boolean(SINO_VIET_MAP[val])),
+              count: 0,
+              chapterIds: new Set(),
+              locations: []
+            });
+          }
+
+          const grp = groupMap.get(key);
+          grp.count++;
+          grp.chapterIds.add(ch.id);
+          if (grp.locations.length < 5) {
+            grp.locations.push({
+              chapterId: ch.id,
+              chapterIndex: ch.chapterIndex,
+              chapterTitle: ch.translatedTitle || ch.title,
+              snippet: val
+            });
+          }
+        }
+
+        if (chIssueCount > 0) {
+          chapterSummaries.push({
+            id: ch.id,
+            chapterIndex: ch.chapterIndex,
+            title: ch.translatedTitle || ch.title,
+            issueCount: chIssueCount
+          });
+        }
+      }
+
+      const groups = Array.from(groupMap.values()).map(g => ({
+        ...g,
+        chapterCount: g.chapterIds.size,
+        chapterIds: Array.from(g.chapterIds)
+      })).sort((a, b) => b.count - a.count);
+
+      const canUndo = Boolean(settings.lastBatchReplaceUndo || settings.lastStoryQaUndo);
+
+      return json({
+        success: true,
+        totalChapters: (chapters || []).length,
+        totalIssues,
+        groups,
+        chapterSummaries,
+        canUndo
+      });
+    }
+
+    // Story QA Apply All Safe: /api/projects/:id/story-qa/apply-all-safe
+    const storyQaSafeMatch = pathname.match(/^\/api\/projects\/([^\/]+)\/story-qa\/apply-all-safe$/);
+    if (storyQaSafeMatch && method === 'POST') {
+      const [_, projectId] = storyQaSafeMatch;
+      const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+      if (!project) return errorJson('Không tìm thấy dự án', 404);
+
+      const characters = JSON.parse(project.characters || '[]');
+      const terms = JSON.parse(project.terms || '[]');
+      const pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
+      const settings = JSON.parse(project.settings || '{}');
+
+      const { results: chapters } = await db.prepare(
+        "SELECT id, chapterIndex, title, originalText, translatedTitle, translatedText, qaReport, issues, chineseCharCount FROM chapters WHERE projectId = ? AND (status = 'completed' OR translatedText IS NOT NULL) ORDER BY chapterIndex ASC"
+      ).bind(projectId).all();
+
+      // Save undo snapshot
+      settings.lastStoryQaUndo = {
+        timestamp: new Date().toISOString(),
+        rows: (chapters || []).map(ch => ({
+          id: ch.id,
+          translatedText: ch.translatedText,
+          translatedTitle: ch.translatedTitle,
+          qaReport: ch.qaReport,
+          issues: ch.issues,
+          chineseCharCount: ch.chineseCharCount
+        }))
+      };
+
+      await db.prepare("UPDATE projects SET settings = ? WHERE id = ?").bind(JSON.stringify(settings), projectId).run();
+
+      let fixedCount = 0;
+      const now = new Date().toISOString();
+
+      for (const ch of (chapters || [])) {
+        if (!ch.translatedText) continue;
+        const cleanedText = autoFixContent(ch.translatedText);
+        const cleanedTitle = autoFixContent(ch.translatedTitle || ch.title);
+
+        const qa = auditText(cleanedText, ch.originalText, { characters, terms, pronounMatrix });
+
+        await db.prepare(`
+          UPDATE chapters
+          SET translatedText = ?,
+              translatedTitle = ?,
+              qaReport = ?,
+              issues = ?,
+              chineseCharCount = ?,
+              updatedAt = ?
+          WHERE id = ?
+        `).bind(
+          cleanedText,
+          cleanedTitle,
+          JSON.stringify(qa),
+          JSON.stringify(qa.issues.map(i => i.message)),
+          qa.stats.chineseCharCount,
+          now,
+          ch.id
+        ).run();
+
+        fixedCount++;
+      }
+
+      return json({
+        success: true,
+        message: `Đã áp dụng sửa chữa an toàn thành công cho ${fixedCount} chương!`,
+        fixedChaptersCount: fixedCount,
+        canUndo: true
       });
     }
 

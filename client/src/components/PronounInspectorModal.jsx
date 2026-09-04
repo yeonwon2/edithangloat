@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, AlertTriangle, Users, CheckCircle2, ArrowRight, X, RefreshCw, Sparkles, Wand2, BookOpen, Layers, Check, FileCheck } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Users, CheckCircle2, ArrowRight, X, RefreshCw, Sparkles, Wand2, BookOpen, Layers, Check, FileCheck, SearchCheck, Zap, RotateCcw } from 'lucide-react';
 
-export default function PronounInspectorModal({ isOpen, onClose, project, selectedChapter, onProjectUpdated }) {
+export default function PronounInspectorModal({ isOpen, onClose, project, selectedChapter, onProjectUpdated, initialTab = 'overview' }) {
   if (!isOpen || !project) return null;
 
   const chapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
   const currentChapter = selectedChapter || chapters[0];
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'compare' | 'rules'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'overview' | 'compare' | 'rules' | 'story-qa'
   const [consistencyData, setConsistencyData] = useState(null);
   const [loadingConsistency, setLoadingConsistency] = useState(true);
   const [batchFixing, setBatchFixing] = useState(false);
   const [batchFixSuccessMsg, setBatchFixSuccessMsg] = useState(null);
+  const [storyQaData, setStoryQaData] = useState(null);
+  const [loadingStoryQa, setLoadingStoryQa] = useState(false);
+  const [applyingSafe, setApplyingSafe] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   const [compareChapterId, setCompareChapterId] = useState(
     chapters.length > 1 ? (chapters[0]?.id === currentChapter?.id ? chapters[1]?.id : chapters[0]?.id) : null
@@ -33,6 +42,65 @@ export default function PronounInspectorModal({ isOpen, onClose, project, select
   const matrixRules = project.pronounMatrix || [];
 
   // Fetch cross-chapter consistency audit
+  const fetchStoryQa = async () => {
+    setLoadingStoryQa(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/story-qa`);
+      if (res.ok) {
+        const data = await res.json();
+        setStoryQaData(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch story QA:', e);
+    } finally {
+      setLoadingStoryQa(false);
+    }
+  };
+
+  const handleApplyAllSafe = async () => {
+    if (applyingSafe) return;
+    setApplyingSafe(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/story-qa/apply-all-safe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBatchFixSuccessMsg(data.message);
+        await fetchStoryQa();
+        await fetchConsistency();
+        if (onProjectUpdated) onProjectUpdated();
+      } else {
+        alert(data.message || 'Lỗi khi sửa lỗi an toàn');
+      }
+    } catch (e) {
+      alert('Lỗi kết nối: ' + e.message);
+    } finally {
+      setApplyingSafe(false);
+    }
+  };
+
+  const handleUndoQA = async () => {
+    try {
+      const res = await fetch(`/api/projects/${project.id}/batch-replace/undo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBatchFixSuccessMsg(data.message);
+        await fetchStoryQa();
+        await fetchConsistency();
+        if (onProjectUpdated) onProjectUpdated();
+      } else {
+        alert(data.message || 'Lỗi khi hoàn tác');
+      }
+    } catch (e) {
+      alert('Lỗi kết nối: ' + e.message);
+    }
+  };
+
   const fetchConsistency = async () => {
     setLoadingConsistency(true);
     try {
@@ -51,6 +119,7 @@ export default function PronounInspectorModal({ isOpen, onClose, project, select
   useEffect(() => {
     if (isOpen) {
       fetchConsistency();
+      fetchStoryQa();
     }
   }, [isOpen, project?.id]);
 
@@ -434,6 +503,92 @@ export default function PronounInspectorModal({ isOpen, onClose, project, select
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: TRUNG TÂM QA TOÀN TRUYỆN */}
+          {activeTab === 'storyqa' && (
+            <div className="space-y-5">
+              {/* Action Banner */}
+              <div className="p-4 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/50 border border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <SearchCheck className="w-4 h-4 text-indigo-400" />
+                    <h4 className="font-bold text-sm text-white">Quét & Tổng Hợp Lỗi Toàn Bộ Các Chương</h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Phát hiện tổng cộng <strong className="text-white">{storyQaData?.totalIssues || 0}</strong> lỗi/nghi vấn trong <strong className="text-white">{storyQaData?.totalChapters || chapters.length}</strong> chương.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {storyQaData?.canUndo && (
+                    <button
+                      onClick={handleUndoQA}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-slate-700"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Hoàn tác QA
+                    </button>
+                  )}
+                  <button
+                    onClick={handleApplyAllSafe}
+                    disabled={applyingSafe}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-950/50 disabled:opacity-50"
+                  >
+                    <Zap className={`w-3.5 h-3.5 ${applyingSafe ? 'animate-spin' : ''}`} />
+                    {applyingSafe ? 'Đang sửa...' : '⚡ Sửa Tất Cả Lỗi An Toàn'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Groups List */}
+              <div className="space-y-3">
+                {loadingStoryQa ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-400" />
+                    Đang quét và gom nhóm lỗi toàn bộ các chương...
+                  </div>
+                ) : (!storyQaData?.groups || storyQaData.groups.length === 0) ? (
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center text-emerald-300">
+                    <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-400" />
+                    Bản dịch toàn bộ truyện hoàn toàn sạch sẽ, không còn lỗi nào!
+                  </div>
+                ) : (
+                  storyQaData.groups.map((group, idx) => (
+                    <div key={idx} className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            group.severity === 'critical' ? 'bg-red-500/15 text-red-400 border border-red-500/20' : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {group.title || group.type}
+                          </span>
+                          <span className="text-white font-semibold text-xs truncate max-w-sm">"{group.value}"</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          Xuất hiện <strong className="text-amber-400">{group.count}</strong> lần · <strong className="text-indigo-300">{group.chapterCount}</strong> chương
+                        </span>
+                      </div>
+
+                      {group.instruction && (
+                        <p className="text-[11px] text-slate-400 italic bg-black/20 p-2 rounded">
+                          {group.instruction} {group.replacement ? <span>➔ Gợi ý: <strong className="text-emerald-400">"{group.replacement}"</strong></span> : null}
+                        </p>
+                      )}
+
+                      {group.locations && group.locations.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {group.locations.map((loc, li) => (
+                            <span key={li} className="px-2 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] text-slate-300">
+                              #Chương {loc.chapterIndex}: {loc.chapterTitle.slice(0, 15)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

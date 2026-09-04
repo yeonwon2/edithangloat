@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RefreshCw, FileText, CheckCircle2, AlertCircle, Clock, Trash2, Eye, Plus, ChevronDown, ChevronUp, Terminal, ShieldCheck, Scissors, X } from 'lucide-react';
+import { Play, Pause, RefreshCw, FileText, CheckCircle2, AlertCircle, Clock, Trash2, Eye, Plus, ChevronDown, ChevronUp, Terminal, ShieldCheck, Scissors, X, SearchCheck } from 'lucide-react';
 import PronounInspectorModal from './PronounInspectorModal';
+import BatchReplaceModal from './BatchReplaceModal';
 
 export default function BatchQueueView({ project, onUpdateProject, onSelectChapterForEdit, onOpenImportModal }) {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -9,7 +10,9 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
   const [filter, setFilter] = useState('all'); // 'all' | 'pending' | 'completed' | 'error'
   const [translatingSingleId, setTranslatingSingleId] = useState(null);
   const [inspectorChapter, setInspectorChapter] = useState(null);
+  const [inspectorTab, setInspectorTab] = useState('overview');
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isBatchReplaceOpen, setIsBatchReplaceOpen] = useState(false);
   const [splitChapterTarget, setSplitChapterTarget] = useState(null);
   const [splitPatternInput, setSplitPatternInput] = useState('');
   const [splitting, setSplitting] = useState(false);
@@ -250,6 +253,26 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700"
           >
             <Plus className="w-4 h-4 text-indigo-400" /> Thêm / Nạp Chương
+          </button>
+
+          <button
+            onClick={() => setIsBatchReplaceOpen(true)}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
+            title="Tìm & thay thế theo chương hoặc toàn bộ truyện với tính năng Xem Trước & Hoàn Tác"
+          >
+            <RefreshCw className="w-4 h-4 text-emerald-400" /> Thay Thế Hàng Loạt
+          </button>
+
+          <button
+            onClick={() => {
+              setInspectorChapter(null);
+              setInspectorTab('story-qa');
+              setIsInspectorOpen(true);
+            }}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
+            title="Trung Tâm QA: Quét toàn bộ lỗi chính tả, chữ Hán sót, xưng hô hiện đại và kính ngữ ạ trên toàn truyện"
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-400" /> Trung Tâm QA Toàn Truyện
           </button>
 
           {queueStatus.isRunning ? (
@@ -642,6 +665,15 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
         </div>
       )}
 
+      {/* Batch Replace Modal */}
+      <BatchReplaceModal
+        isOpen={isBatchReplaceOpen}
+        onClose={() => setIsBatchReplaceOpen(false)}
+        project={project}
+        selectedChapter={inspectorChapter || chapters[0]}
+        onProjectUpdated={onUpdateProject}
+      />
+
       {/* Pronoun Inspector Modal */}
       <PronounInspectorModal
         isOpen={isInspectorOpen}
@@ -649,6 +681,7 @@ export default function BatchQueueView({ project, onUpdateProject, onSelectChapt
         project={project}
         selectedChapter={inspectorChapter}
         onProjectUpdated={onUpdateProject}
+        initialTab={inspectorTab}
       />
     </div>
   );
