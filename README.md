@@ -50,6 +50,7 @@ Phần mềm dịch thuật tiểu thuyết mạng Trung Quốc (Truyện chữ,
 ```bash
 # Cài đặt thư viện (nếu chưa cài)
 npm install
+npm run build:client
 
 # Khởi động server
 npm start
@@ -57,6 +58,45 @@ npm start
 Truy cập: `http://localhost:3001`
 
 ---
+
+## ☁️ Hướng Dẫn Deploy Lên Cloudflare Pages & D1 Database
+
+Dự án đã được cấu hình sẵn kiến trúc **Fullstack Cloudflare Edge** với cơ sở dữ liệu **Cloudflare D1 (Serverless SQLite)** và Cloudflare Pages Functions (`functions/api/[[route]].js`).
+
+### Bước 1: Tạo Cloudflare D1 Database
+1. Truy cập [Cloudflare Dashboard](https://dash.cloudflare.com/) -> Vào mục **Workers & Pages** -> **D1 SQL Database**.
+2. Bấm **Create database** -> Đặt tên: `edithangloat-db`.
+3. Bấm vào database vừa tạo -> Chọn tab **Console** -> Copy toàn bộ nội dung file [schema.sql](schema.sql) dán vào ô chạy lệnh -> Bấm **Execute**. (Tất cả bảng `projects`, `chapters`, `config` sẽ được khởi tạo tự động).
+
+### Bước 2: Deploy Cloudflare Pages từ GitHub
+1. Vào **Workers & Pages** -> Bấm **Create application** -> Chọn tab **Pages** -> **Connect to Git**.
+2. Chọn repo GitHub: `yeonwon2/edithangloat`.
+3. Cấu hình phần Build settings:
+   - **Framework preset**: `Vite`
+   - **Build command**: `npm run build:client`
+   - **Build output directory**: `client/dist`
+   - **Root directory**: để trống `/`
+4. Bấm **Save and Deploy**.
+
+### Bước 3: Gắn D1 Database vào Cloudflare Pages
+1. Sau khi trang được deploy lần đầu, vào **Settings** của dự án Pages vừa tạo -> chọn mục **Functions**.
+2. Cuộn xuống phần **D1 database bindings** -> Bấm **Add binding**:
+   - **Variable name**: `DB` *(viết hoa 2 chữ DB)*
+   - **D1 database**: chọn `edithangloat-db`
+3. Bấm **Save**.
+4. Vào tab **Deployments** -> Bấm **Retry deployment** (hoặc tạo một commit mới để Pages tự rebuild).
+
+### Bước 4: Thêm Custom Subdomain (Tên Miền Con Của Bạn)
+1. Trong dự án Pages, chọn tab **Custom domains**.
+2. Bấm **Set up a custom domain**.
+3. Nhập tên miền con của bạn (Ví dụ: `dich.domaincuaban.com` hoặc `edit.domaincuaban.com`).
+4. Bấm **Continue** -> Cloudflare sẽ tự động trỏ bản ghi CNAME và cấp chứng chỉ bảo mật SSL miễn phí trong 1 phút!
+
+---
+
+## 🛡️ Bản Quyền & Bảo Mật
+- Các file cấu hình chứa API Key cá nhân (`data/config.json`) đã được đưa vào `.gitignore` để bảo đảm tuyệt đối không bao giờ bị lộ lên GitHub.
+- Bạn có thể thêm key trực tiếp trên giao diện web hoặc thông qua biến môi trường `GEMINI_API_KEY` trong Cloudflare Pages Settings.
 
 ## 📖 Hướng Dẫn Sử Dụng Chi Tiết
 
