@@ -137,14 +137,65 @@ function auditText(text, originalText = '', glossary = {}) {
   };
 }
 
-// 1-Click Auto-Fix helper
+// Automated Text Cleaner & 1-Click Auto-Fix helper
 function autoFixContent(text) {
   if (!text) return text;
   let fixed = text;
 
   // Clean meta AI chatter
-  fixed = fixed.replace(/^.*?(?:đây là bản dịch|dưới đây là bản dịch|bản dịch tiếng việt).*?:\s*\n+/gim, '');
-  fixed = fixed.replace(/\n+.*?(?:hy vọng bản dịch làm bạn hài lòng|nếu cần chỉnh sửa gì thêm).*$/gim, '');
+  fixed = fixed.replace(/^.*?(?:đây là bản dịch|dưới đây là bản dịch|sau đây là bản dịch|bản dịch tiếng việt).*?:\s*\n+/gim, '');
+  fixed = fixed.replace(/\n+.*?(?:hy vọng bản dịch làm bạn hài lòng|nếu cần chỉnh sửa gì thêm|chúc bạn đọc truyện vui vẻ).*$/gim, '');
+
+  // Punctuation normalization (convert fullwidth Chinese punctuation to standard Vietnamese)
+  fixed = fixed
+    .replace(/，/g, ', ')
+    .replace(/。/g, '. ')
+    .replace(/！/g, '! ')
+    .replace(/？/g, '? ')
+    .replace(/：/g, ': ')
+    .replace(/；/g, '; ')
+    .replace(/（/g, ' (')
+    .replace(/）/g, ') ')
+    .replace(/【/g, ' [')
+    .replace(/】/g, '] ')
+    .replace(/《/g, ' "')
+    .replace(/》/g, '" ')
+    .replace(/——/g, ' — ')
+    .replace(/…/g, '...');
+
+  // Extract Vietnamese from mixed Han-Viet patterns: e.g. "阿迟 (A Trì)" -> "A Trì", "刘导 (Đạo diễn Lưu)" -> "Đạo diễn Lưu"
+  fixed = fixed.replace(/[\u4e00-\u9fa5]+\s*\(([^)]+)\)/g, '$1');
+
+  // Fix common broken half-translated words & words with Chinese characters
+  fixed = fixed.replace(/nương娘/g, 'nương nương');
+  fixed = fixed.replace(/娘娘/g, 'nương nương');
+  fixed = fixed.replace(/Đỗ Chiêu璃/g, 'Đỗ Chiêu Ly');
+  fixed = fixed.replace(/Chiêu璃/g, 'Chiêu Ly');
+  fixed = fixed.replace(/Thái y 院/g, 'Thái y viện');
+  fixed = fixed.replace(/Thái医院/g, 'Thái y viện');
+  fixed = fixed.replace(/y 院/g, 'y viện');
+  fixed = fixed.replace(/Ngự药署/g, 'Ngự dược thự');
+  fixed = fixed.replace(/Thọ宴/g, 'Thọ yến');
+  fixed = fixed.replace(/cáo退\s*lui/g, 'cáo lui');
+  fixed = fixed.replace(/cáo退/g, 'cáo lui');
+  fixed = fixed.replace(/阿迟/g, 'A Trì');
+  fixed = fixed.replace(/温迟/g, 'Ôn Trì');
+  fixed = fixed.replace(/đêm trẫm nhập cung/gi, 'đêm nhập cung');
+  fixed = fixed.replace(/trẫm nhập cung/gi, 'nhập cung');
+
+  // Convert artifacts & smooth phrasing
+  fixed = fixed.replace(/\bđích\b/g, '');
+  fixed = fixed.replace(/\bcủa (hắn|nàng|ta|ngươi|họ) đích\b/gi, 'của $1');
+  fixed = fixed.replace(/\bnhịn không được\b/gi, 'không kìm được');
+  fixed = fixed.replace(/\bkhông kìm được mà\b/gi, 'không kìm được');
+  fixed = fixed.replace(/\bôm ấp hy vọng\b/gi, 'nuôi hy vọng');
+  fixed = fixed.replace(/\bhơi hơi\b/gi, 'hơi');
+  fixed = fixed.replace(/\btrong lúc nhất thời\b/gi, 'nhất thời');
+  fixed = fixed.replace(/\bthời điểm đó\b/gi, 'lúc đó');
+  fixed = fixed.replace(/\bkhông khỏi thầm nghĩ\b/gi, 'thầm nghĩ');
+  fixed = fixed.replace(/\bđối với việc này\b/gi, 'về việc này');
+  fixed = fixed.replace(/\btheo vách đá\b/gi, 'lao dốc');
+  fixed = fixed.replace(/\btruyền thông tự nhân\b/gi, 'truyền thông độc lập');
 
   // Balance unpaired quotes
   const opens = (fixed.match(/“/g) || []).length;
@@ -153,12 +204,13 @@ function autoFixContent(text) {
     fixed += '”'.repeat(opens - closes);
   }
 
-  // Smooth common convert artifacts
-  fixed = fixed.replace(/\bđích\b/g, '');
-  fixed = fixed.replace(/\s{2,}/g, ' ');
+  // Clean double spaces and spaces before punctuation
+  fixed = fixed.replace(/[^\S\r\n]{2,}/g, ' ');
+  fixed = fixed.replace(/[^\S\r\n]+([,.\?!;:])/g, '$1');
 
   return fixed.trim();
 }
+
 
 // Native Edge DOCX & EPUB Text Extractors using Web Standard DecompressionStream
 async function extractDocxText(arrayBuffer) {
@@ -507,18 +559,18 @@ async function autoExtractEntities(keys, model, text, genre) {
 Nhiệm vụ: Hãy phân tích đoạn văn bản tiểu thuyết sau (thể loại: ${genre || 'Tiên Hiệp / Huyền Huyễn'}), trích xuất toàn bộ:
 1. Danh sách Nhân vật:
    - zh: Tên tiếng Trung
-   - vi: Tên Hán Việt chuẩn
+   - vi: Tên Hán Việt chuẩn 100% bằng TIẾNG VIỆT CHỮ QUỐC NGỮ CÓ DẤU. TUYỆT ĐỐI KHÔNG ĐỂ LẠI KÝ TỰ CHỮ HÁN NÀO (Ví dụ: 杜昭璃 -> Đỗ Chiêu Ly, không được để là Đỗ Chiêu璃; 孙副总 -> Tôn phó tổng; 肖云 -> Tiêu Vân).
    - gender: Giới tính ("Nam" hoặc "Nữ")
-   - narrativePronoun: Ngôi xưng của người dẫn chuyện khi miêu tả nhân vật này (Nam xưng "hắn", Nữ xưng "nàng" hoặc "cô")
-   - role: Thân phận / Vai vế (nhân vật chính, sư phụ, đệ tử, v.v.)
+   - narrativePronoun: Ngôi xưng dẫn chuyện chuẩn giới tính: Nữ dùng "nàng" hoặc "cô" (tuyệt đối không dùng "hắn" cho nữ); Nam dùng "hắn" hoặc "anh".
+   - role: Thân phận / Vai vế (nhân vật chính, sư phụ, hoàng hậu, đạo diễn, v.v.)
    - notes: Ghi chú quan hệ
 2. Ma trận Xưng hô: Giữa các cặp nhân vật tương tác / đối thoại trực tiếp:
    - speakerZh: Tên Trung người nói
    - listenerZh: Tên Trung người nghe
-   - speakerCallsSelf: Người nói tự xưng là gì (ta, đệ tử, vi sư, lão phu, tại hạ...)
-   - speakerCallsListener: Người nói gọi người nghe là gì (ngươi, sư tôn, đồ nhi, các hạ, đạo hữu...)
+   - speakerCallsSelf: Người nói tự xưng là gì 100% bằng TIẾNG VIỆT (ta, em, tôi, thảo dân, tiểu bối, bản cung, trẫm...). TUYỆT ĐỐI KHÔNG DÙNG CHỮ HÁN NHƯ 我, 本座, 本宫.
+   - speakerCallsListener: Người nói gọi người nghe là gì 100% bằng TIẾNG VIỆT (ngươi, nàng, cô, sư tôn, nương nương, bệ hạ, tổng tài, đạo diễn...). TUYỆT ĐỐI KHÔNG DÙNG CHỮ HÁN NHƯ 你, 娘娘, 导演.
    - notes: Thái độ (tôn kính, thân mật, thù địch...)
-3. Thuật ngữ quan trọng: Tông môn, cảnh giới, địa danh, pháp bảo.
+3. Thuật ngữ quan trọng: Tông môn, cảnh giới, địa danh, pháp bảo, cơ quan, chức vụ.
 
 Văn bản mẫu:
 """
@@ -528,13 +580,13 @@ ${text.slice(0, 8000)}
 Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown code block \`\`\`json hoặc bất kỳ lời dẫn nào):
 {
   "characters": [
-    { "zh": "tên Trung", "vi": "tên Hán Việt", "gender": "Nam", "narrativePronoun": "hắn", "role": "nhân vật chính", "notes": "" }
+    { "zh": "tên Trung", "vi": "Tên Hán Việt", "gender": "Nữ", "narrativePronoun": "nàng", "role": "nhân vật chính", "notes": "" }
   ],
   "pronounMatrix": [
     { "speakerZh": "tên người nói", "listenerZh": "tên người nghe", "speakerCallsSelf": "ta", "speakerCallsListener": "ngươi", "notes": "" }
   ],
   "terms": [
-    { "zh": "từ Trung", "vi": "dịch Hán Việt", "category": "Thuật ngữ" }
+    { "zh": "từ Trung", "vi": "Dịch Hán Việt", "category": "Thuật ngữ" }
   ]
 }`;
 
@@ -543,11 +595,43 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown c
     const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
-    return {
-      characters: Array.isArray(parsed.characters) ? parsed.characters : [],
-      pronounMatrix: Array.isArray(parsed.pronounMatrix) ? parsed.pronounMatrix : [],
-      terms: Array.isArray(parsed.terms) ? parsed.terms : []
+
+    const cleanStr = (str) => {
+      if (!str || typeof str !== 'string') return '';
+      let s = str.replace(/[\u4e00-\u9fa5]+\s*\(([^)]+)\)/g, '$1');
+      s = s.replace(/[\u4e00-\u9fa5]/g, '').trim();
+      s = s.replace(/\(\s*\)/g, '').replace(/\/\s*\//g, '/').replace(/^\s*\/|\/\s*$/g, '').trim();
+      return s;
     };
+
+    const rawChars = Array.isArray(parsed.characters) ? parsed.characters : [];
+    const characters = rawChars.map(c => ({
+      ...c,
+      vi: cleanStr(c.vi) || c.zh,
+      role: cleanStr(c.role),
+      notes: cleanStr(c.notes)
+    }));
+
+    const rawPronouns = Array.isArray(parsed.pronounMatrix) ? parsed.pronounMatrix : [];
+    const pronounMatrix = rawPronouns.map(p => {
+      const listenerCall = cleanStr(p.speakerCallsListener || p.listenerCallsListener || p.speakerCallsOther || '');
+      const selfCall = cleanStr(p.speakerCallsSelf || '');
+      return {
+        ...p,
+        speakerCallsSelf: selfCall || 'ta',
+        speakerCallsListener: listenerCall || 'ngươi',
+        notes: cleanStr(p.notes)
+      };
+    });
+
+    const rawTerms = Array.isArray(parsed.terms) ? parsed.terms : [];
+    const terms = rawTerms.map(t => ({
+      ...t,
+      vi: cleanStr(t.vi) || t.zh,
+      category: cleanStr(t.category) || 'Thuật ngữ'
+    }));
+
+    return { characters, pronounMatrix, terms };
   } catch (e) {
     console.error('Error autoExtractEntities:', e);
     return { characters: [], pronounMatrix: [], terms: [] };
@@ -1258,13 +1342,24 @@ export async function onRequest(context) {
         }
       }
 
-      let sysPrompt = `Bạn là dịch giả tiểu thuyết chuyên nghiệp dịch từ tiếng Trung sang tiếng Việt.\n`;
+      const isBachHop = (project.genre || '').toLowerCase().includes('bách hợp');
+      const isCoDai = (project.genre || '').toLowerCase().includes('cổ đại') || (project.genre || '').toLowerCase().includes('cung đấu');
+
+      let genreGuidance = '';
+      if (isBachHop) {
+        genreGuidance += `\n- BỐI CẢNH BÁCH HỢP (GL - NỮ X NỮ): Các nhân vật chính (như Ôn Trì, Đỗ Chiêu Ly) đều là PHÁI NỮ. Ngôi dẫn chuyện phải xưng là "nàng" hoặc "cô", TUYỆT ĐỐI KHÔNG dùng "hắn" và không được đổi giới tính nhân vật thành nam!\n`;
+      }
+      if (isCoDai) {
+        genreGuidance += `\n- BỐI CẢNH CỔ ĐẠI / CUNG ĐÌNH: Xưng hô hoàng tộc - thứ dân phải chuẩn mực (Thầy thuốc / thảo dân trước mặt Hoàng hậu tự xưng "thảo dân" hoặc "dân nữ", gọi Hoàng hậu là "nương nương"; Hoàng hậu tự xưng "bản cung"; Hoàng đế tự xưng "trẫm"). Thứ dân KHÔNG được tự xưng "trẫm".\n`;
+      }
+
+      let sysPrompt = `Bạn là dịch giả tiểu thuyết chuyên nghiệp dịch từ tiếng Trung sang tiếng Việt.\n${genreGuidance}`;
       if (project.toneGuidance) sysPrompt += `\nĐẶC TẢ VĂN PHONG:\n${project.toneGuidance}\n`;
 
       if (characters.length > 0) {
         sysPrompt += `\nNHÂN VẬT & NGÔI DẪN CHUYỆN BẮT BUỘC:\n`;
         characters.forEach(c => {
-          sysPrompt += `- ${c.zh} → ${c.vi} (Giới tính: ${c.gender || 'Chưa rõ'}). Ngôi dẫn truyện luôn xưng: "${c.narrativePronoun || 'hắn'}". ${c.notes || ''}\n`;
+          sysPrompt += `- ${c.zh} → ${c.vi} (Giới tính: ${c.gender || 'Chưa rõ'}). Ngôi dẫn truyện luôn xưng: "${c.narrativePronoun || (c.gender === 'Nữ' ? 'nàng' : 'hắn')}". ${c.notes || ''}\n`;
         });
       }
 
@@ -1282,18 +1377,37 @@ export async function onRequest(context) {
         });
       }
 
-      sysPrompt += `\nQUY TẮC:\n- Dịch đầy đủ 100%, không tóm tắt hay lược bỏ câu.\n- Giữ nguyên cấu trúc phân đoạn và ngắt dòng của bản gốc.\n- Chỉ xuất ra duy nhất bản dịch tiếng Việt.`;
+      sysPrompt += `\nQUY TẮC ĐẦU RA BẮT BUỘC:
+- Dòng 1: Tiêu đề chương dịch hoàn chỉnh sang tiếng Việt (Ví dụ: "Chương 1: Yết Bảng" hoặc "Chương 2: Nhập Cung" hoặc "Chương 2: Lai Giả Bất Thiện" hoặc "Giới Thiệu & Văn Án").
+- Dòng 2 trở đi: Toàn bộ nội dung chương dịch. Giữ nguyên 100% kết cấu phân đoạn và ngắt dòng của bản gốc.
+- Dịch đầy đủ 100%, không tóm tắt hay lược bỏ bất kỳ câu nào.
+- Chỉ xuất ra DUY NHẤT bản dịch tiếng Việt, không kèm lời chào hỏi, mở đầu hay ghi chú.`;
 
-      const prompt = `Dịch văn bản sau sang tiếng Việt:\n\n${chapter.originalText}`;
+      const titleToTranslate = chapter.title || '';
+      const prompt = `Dịch tiêu đề và nội dung chương sau sang tiếng Việt:\n\nTIÊU ĐỀ GỐC:\n${titleToTranslate}\n\nNỘI DUNG GỐC:\n${chapter.originalText}`;
       const translated = await callGemini(keys, project.model || 'gemini-3.6-flash', prompt, sysPrompt);
 
-      const qa = auditText(translated, chapter.originalText, { characters, terms, pronounMatrix });
+      const lines = translated.trim().split('\n');
+      let finalTranslatedTitle = chapter.translatedTitle || '';
+      let finalTranslatedBody = translated;
+
+      if (lines.length > 1 && lines[0].trim().length < 150) {
+        finalTranslatedTitle = lines[0].trim().replace(/^#+\s*/, '').replace(/^\[?Tiêu đề[^:\]]*[:\]]\s*/i, '');
+        finalTranslatedBody = lines.slice(1).join('\n').trim();
+      } else if (!finalTranslatedTitle || /[\u4e00-\u9fa5]/.test(finalTranslatedTitle)) {
+        finalTranslatedTitle = chapter.title;
+      }
+
+      finalTranslatedTitle = autoFixContent(finalTranslatedTitle);
+      finalTranslatedBody = autoFixContent(finalTranslatedBody);
+
+      const qa = auditText(finalTranslatedBody, chapter.originalText, { characters, terms, pronounMatrix });
       const now = new Date().toISOString();
 
       await db.prepare(`
         UPDATE chapters
         SET translatedText = ?,
-            translatedTitle = COALESCE(translatedTitle, ?),
+            translatedTitle = ?,
             status = 'completed',
             qaReport = ?,
             issues = ?,
@@ -1301,8 +1415,8 @@ export async function onRequest(context) {
             updatedAt = ?
         WHERE id = ?
       `).bind(
-        translated,
-        chapter.title,
+        finalTranslatedBody,
+        finalTranslatedTitle,
         JSON.stringify(qa),
         JSON.stringify(qa.issues.map(i => i.message)),
         qa.stats.chineseCharCount,
