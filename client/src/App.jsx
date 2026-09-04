@@ -50,6 +50,11 @@ export default function App() {
   // Key count
   const [keysCount, setKeysCount] = useState(0);
 
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
+
   // Theme State: 'light' | 'dark' (Default to light for eye-comfort)
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('dichtruyen_theme') || 'light';
