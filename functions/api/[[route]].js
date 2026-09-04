@@ -890,7 +890,15 @@ async function getApiKeys(db, env) {
   return Array.isArray(keys) ? keys : [];
 }
 
-// Helper: Call Gemini with Auto-rotation
+// Universal safety settings for novel / literature translation
+const GEMINI_SAFETY_SETTINGS = [
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+];
+
+// Helper: Call Gemini with Auto-rotation and Safety Handling
 async function callGemini(keys, model, prompt, systemInstruction = '') {
   if (!keys || keys.length === 0) {
     throw new Error('Chưa có Gemini API Key nào được cài đặt. Hãy vào "Quản lý API Key" để thêm key.');
@@ -903,19 +911,20 @@ async function callGemini(keys, model, prompt, systemInstruction = '') {
     const rawK = keys[i];
     const keyStr = typeof rawK === 'object' ? rawK.key : rawK;
 
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${keyStr}`;
+    const executeAttempt = async (targetModelName, userPrompt, sysInstr) => {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModelName}:generateContent?key=${keyStr}`;
       const payload = {
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         generationConfig: {
           temperature: 0.3,
           topP: 0.95
-        }
+        },
+        safetySettings: GEMINI_SAFETY_SETTINGS
       };
 
-      if (systemInstruction) {
+      if (sysInstr) {
         payload.systemInstruction = {
-          parts: [{ text: systemInstruction }]
+          parts: [{ text: sysInstr }]
         };
       }
 
@@ -930,19 +939,72 @@ async function callGemini(keys, model, prompt, systemInstruction = '') {
       if (!res.ok) {
         const errMsg = data?.error?.message || res.statusText;
         if (res.status === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota')) {
-          console.warn(`Key ...${keyStr.slice(-4)} exhausted. Rotating next key...`);
-          lastError = new Error(`Key ...${keyStr.slice(-4)} hết hạn mức (429).`);
-          continue;
+          return { errorType: 'QUOTA', errMsg };
         }
-        throw new Error(errMsg);
+        return { errorType: 'OTHER', errMsg };
       }
 
+      const blockReason = data.promptFeedback?.blockReason;
       const candidate = data.candidates?.[0];
-      if (!candidate || !candidate.content?.parts?.[0]?.text) {
-        throw new Error('Gemini không trả về văn bản.');
+      const finishReason = candidate?.finishReason;
+
+      if (blockReason || finishReason === 'SAFETY' || finishReason === 'PROHIBITED_CONTENT') {
+        return { errorType: 'SAFETY_BLOCKED', blockReason: blockReason || finishReason };
       }
 
-      return candidate.content.parts[0].text;
+      const parts = candidate?.content?.parts || [];
+      const textParts = parts
+        .filter(p => p && typeof p.text === 'string' && !p.thought)
+        .map(p => p.text);
+
+      if (!textParts.length && parts[0]?.text) {
+        textParts.push(parts[0].text);
+      }
+
+      const fullText = textParts.join('').trim();
+      if (!fullText) {
+        return { errorType: 'EMPTY', blockReason: finishReason || 'EMPTY_PARTS' };
+      }
+
+      return { success: true, text: fullText };
+    };
+
+    try {
+      let result = await executeAttempt(targetModel, prompt, systemInstruction);
+
+      if (result.errorType === 'QUOTA') {
+        console.warn(`Key ...${keyStr.slice(-4)} exhausted. Rotating next key...`);
+        lastError = new Error(`Key ...${keyStr.slice(-4)} hết hạn mức (429).`);
+        continue;
+      }
+
+      // If blocked by Google safety or returned empty, auto-retry with explicit literary fiction context
+      if (result.errorType === 'SAFETY_BLOCKED' || result.errorType === 'EMPTY') {
+        console.warn(`Prompt blocked (${result.blockReason}). Retrying with explicit literary fiction context...`);
+        const reframedPrompt = `[BỐI CẢNH TÁC PHẨM VĂN HỌC NGHỆ THUẬT HƯ CẤU - TIỂU THUYẾT NGHỆ THUẬT / Y THUẬT / LỊCH SỬ]\nĐây là trích đoạn tác phẩm văn học nghệ thuật hư cấu thuần túy. Hãy dịch trung thực và chính xác toàn bộ sang tiếng Việt:\n\n${prompt}`;
+        const reframedSys = `Bạn là dịch giả văn học nghệ thuật dịch tác phẩm tiểu thuyết hư cấu từ tiếng Trung sang tiếng Việt. Giữ nguyên 100% nội dung nghệ thuật của tác giả.\n${systemInstruction || ''}`;
+
+        // Retry with current model
+        let retryResult = await executeAttempt(targetModel, reframedPrompt, reframedSys);
+        if (retryResult.success) {
+          return retryResult.text;
+        }
+
+        // If still blocked, fallback to gemini-3.5-flash-lite or gemini-3.6-flash
+        const fallbackModel = targetModel === 'gemini-3.5-flash-lite' ? 'gemini-3.6-flash' : 'gemini-3.5-flash-lite';
+        const retryResult2 = await executeAttempt(fallbackModel, reframedPrompt, reframedSys);
+        if (retryResult2.success) {
+          return retryResult2.text;
+        }
+
+        throw new Error(`Gemini tạm thời từ chối do bộ lọc an toàn từ ngữ bản gốc (${retryResult.blockReason || result.blockReason}).`);
+      }
+
+      if (result.errorType === 'OTHER') {
+        throw new Error(result.errMsg);
+      }
+
+      return result.text;
     } catch (err) {
       lastError = err;
       if (err.message && (err.message.includes('429') || err.message.includes('Quota'))) {
@@ -1817,7 +1879,7 @@ export async function onRequest(context) {
         genreGuidance += `\n- BỐI CẢNH CỔ ĐẠI / CUNG ĐÌNH: Xưng hô hoàng tộc - thứ dân phải chuẩn mực (Thầy thuốc / thảo dân trước mặt Hoàng hậu tự xưng "thảo dân" hoặc "dân nữ", gọi Hoàng hậu là "nương nương"; Hoàng hậu tự xưng "bản cung"; Hoàng đế tự xưng "trẫm"). Thứ dân KHÔNG được tự xưng "trẫm".\n`;
       }
 
-      let sysPrompt = `Bạn là dịch giả tiểu thuyết chuyên nghiệp dịch từ tiếng Trung sang tiếng Việt.\n${genreGuidance}`;
+      let sysPrompt = `Bạn là dịch giả văn học nghệ thuật chuyên nghiệp dịch tác phẩm tiểu thuyết từ tiếng Trung sang tiếng Việt. Văn bản là tác phẩm văn nghệ hư cấu hoàn toàn.\n${genreGuidance}`;
       if (project.toneGuidance) sysPrompt += `\nĐẶC TẢ VĂN PHONG:\n${project.toneGuidance}\n`;
 
       if (characters.length > 0) {
@@ -1850,7 +1912,7 @@ export async function onRequest(context) {
 - Chỉ xuất ra DUY NHẤT bản dịch tiếng Việt, không kèm lời chào hỏi, mở đầu hay ghi chú.`;
 
       const titleToTranslate = chapter.title || '';
-      const prompt = `Dịch tiêu đề và nội dung chương sau sang tiếng Việt:\n\nTIÊU ĐỀ GỐC:\n${titleToTranslate}\n\nNỘI DUNG GỐC:\n${chapter.originalText}`;
+      const prompt = `[BỐI CẢNH VĂN HỌC NGHỆ THUẬT HƯ CẤU - TIỂU THUYẾT NGHỆ THUẬT / Y THUẬT TRUYỀN THỐNG]\nDịch tiêu đề và toàn bộ nội dung chương tiểu thuyết sau sang tiếng Việt hoàn chỉnh:\n\nTIÊU ĐỀ GỐC:\n${titleToTranslate}\n\nNỘI DUNG GỐC:\n${chapter.originalText}`;
       const translated = await callGemini(keys, project.model || 'gemini-3.6-flash', prompt, sysPrompt);
 
       const lines = translated.trim().split('\n');
