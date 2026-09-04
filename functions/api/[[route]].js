@@ -463,7 +463,7 @@ export async function onRequest(context) {
           chapterCount: Number(row.chapterCount || 0)
         }));
 
-        return json(formatted);
+        return json({ success: true, projects: formatted });
       }
 
       if (method === 'POST') {
@@ -479,7 +479,7 @@ export async function onRequest(context) {
           body.title || 'Truyện mới',
           body.genre || 'Tiên Hiệp / Huyền Huyễn',
           body.toneGuidance || '',
-          body.model || 'gemini-2.0-flash',
+          body.model || 'gemini-3.6-flash',
           JSON.stringify(body.characters || []),
           JSON.stringify(body.terms || []),
           JSON.stringify(body.pronounMatrix || []),
@@ -489,13 +489,18 @@ export async function onRequest(context) {
         ).run();
 
         const project = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(id).first();
-        return json({
+        const projectData = {
           ...project,
           characters: JSON.parse(project.characters || '[]'),
           terms: JSON.parse(project.terms || '[]'),
           pronounMatrix: JSON.parse(project.pronounMatrix || '[]'),
           settings: JSON.parse(project.settings || '{}'),
           chapters: []
+        };
+        return json({
+          success: true,
+          project: projectData,
+          ...projectData
         }, 201);
       }
     }
@@ -513,7 +518,7 @@ export async function onRequest(context) {
           "SELECT * FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC"
         ).bind(projectId).all();
 
-        return json({
+        const projectData = {
           ...project,
           characters: JSON.parse(project.characters || '[]'),
           terms: JSON.parse(project.terms || '[]'),
@@ -524,6 +529,11 @@ export async function onRequest(context) {
             qaReport: JSON.parse(c.qaReport || '{}'),
             issues: JSON.parse(c.issues || '[]')
           }))
+        };
+        return json({
+          success: true,
+          project: projectData,
+          ...projectData
         });
       }
 
@@ -556,7 +566,21 @@ export async function onRequest(context) {
           projectId
         ).run();
 
-        return json({ success: true });
+        const updatedProject = await db.prepare("SELECT * FROM projects WHERE id = ?").bind(projectId).first();
+        const { results: chapters } = await db.prepare("SELECT * FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC").bind(projectId).all();
+        const projectData = {
+          ...updatedProject,
+          characters: JSON.parse(updatedProject.characters || '[]'),
+          terms: JSON.parse(updatedProject.terms || '[]'),
+          pronounMatrix: JSON.parse(updatedProject.pronounMatrix || '[]'),
+          settings: JSON.parse(updatedProject.settings || '{}'),
+          chapters: (chapters || []).map(c => ({
+            ...c,
+            qaReport: JSON.parse(c.qaReport || '{}'),
+            issues: JSON.parse(c.issues || '[]')
+          }))
+        };
+        return json({ success: true, project: projectData, ...projectData });
       }
 
       if (method === 'DELETE') {
@@ -564,7 +588,7 @@ export async function onRequest(context) {
           db.prepare("DELETE FROM chapters WHERE projectId = ?").bind(projectId),
           db.prepare("DELETE FROM projects WHERE id = ?").bind(projectId)
         ]);
-        return json({ success: true });
+        return json({ success: true, message: 'Đã xóa dự án thành công' });
       }
     }
 

@@ -19,6 +19,7 @@ import {
 
 import LoginView from './components/LoginView';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import ProjectManagerModal from './components/ProjectManagerModal';
 import KeyManagerModal from './components/KeyManagerModal';
 import ExportModal from './components/ExportModal';
 import ImportModal from './components/ImportModal';
@@ -40,6 +41,7 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [newProjectGenre, setNewProjectGenre] = useState('Tiên Hiệp');
 
@@ -112,64 +114,16 @@ export default function App() {
     try {
       const res = await fetch('/api/projects');
       const data = await res.json();
-      setProjects(data.projects || []);
+      const list = Array.isArray(data) ? data : (data.projects || []);
+      setProjects(list);
 
-      if (data.projects && data.projects.length > 0) {
-        if (!currentProjectId) {
-          setCurrentProjectId(data.projects[0].id);
+      if (list.length > 0) {
+        if (!currentProjectId || !list.some(p => p.id === currentProjectId)) {
+          setCurrentProjectId(list[0].id);
         }
       } else {
-        // Automatically create a default sample project if none exists
-        createDefaultProject();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const createDefaultProject = async () => {
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'Đấu Phá Khung Thương (Mẫu)',
-          genre: 'Tiên Hiệp / Tu Chân',
-          toneGuidance: 'Văn phong tu tiên cổ phong hào sảng, xưng hô tôn ti sư đồ rõ ràng'
-        })
-      });
-      const data = await res.json();
-      if (data.project) {
-        // Add sample chapter 1
-        const sampleText = `第一章 陨落的天才\n“斗之力，三段！”\n望着测验魔石碑上闪亮得甚至有些刺眼的五个大字，少年面无表情，唇角有着一抹自嘲，紧握的手掌，因为大力，而导致略微尖锐的指甲深深的刺进了掌心之中，带来一阵阵钻心的疼痛…\n“萧炎，斗之力，三段！级别：低级！”测验魔石碑之旁，一位中年男子，看了一眼碑上所显示出来的信息，语气漠然的将之公布了出来…\n中年男子话刚脱口，便是不出意料的在那拥挤的广场上带来了一阵嘲讽的骚动。\n“三段？嘿嘿，果然不出我所料，这个‘天才’这一年又是在原地踏步！”\n“哎，这陨落的天才，真是把我们萧家的脸都给丢光了。”`;
-        await fetch(`/api/projects/${data.project.id}/import-text`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: sampleText })
-        });
-
-        // Add sample character and glossary
-        data.project.characters = [
-          { id: 'c1', zh: '萧炎', vi: 'Tiêu Viêm', gender: 'Nam', role: 'Nhân vật chính', notes: 'Thiếu niên thiên tài gia tộc họ Tiêu' },
-          { id: 'c2', zh: '药老', vi: 'Dược Lão', gender: 'Nam', role: 'Sư phụ', notes: 'Lão sư linh hồn trong giới chỉ' }
-        ];
-        data.project.pronounMatrix = [
-          { id: 'p1', speakerZh: '萧炎', listenerZh: '药老', speakerCallsSelf: 'đệ tử', speakerCallsListener: 'sư phụ / lão sư', notes: 'Kính trọng' },
-          { id: 'p2', speakerZh: '药老', listenerZh: '萧炎', speakerCallsSelf: 'vi sư', speakerCallsListener: 'tiểu tử / ngươi', notes: 'Thân thiết' }
-        ];
-        data.project.terms = [
-          { id: 't1', zh: '斗之力', vi: 'Đấu Chi Lực', category: 'Cảnh giới' },
-          { id: 't2', zh: '测验魔石碑', vi: 'Ma Thạch Bia Trắc Nghiệm', category: 'Pháp bảo' }
-        ];
-
-        await fetch(`/api/projects/${data.project.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data.project)
-        });
-
-        fetchProjects();
-        setCurrentProjectId(data.project.id);
+        setCurrentProjectId(null);
+        setCurrentProject(null);
       }
     } catch (e) {
       console.error(e);
@@ -177,45 +131,65 @@ export default function App() {
   };
 
   const fetchProjectDetail = async (id) => {
+    if (!id) {
+      setCurrentProject(null);
+      return;
+    }
     try {
       const res = await fetch(`/api/projects/${id}`);
       const data = await res.json();
-      setCurrentProject(data.project);
+      const proj = data.project || (data.id ? data : null);
+      setCurrentProject(proj);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleCreateProject = async () => {
-    if (!newProjectTitle.trim()) return;
+  const handleCreateProject = async (projectData) => {
+    const payload = typeof projectData === 'object' && projectData.title ? projectData : {
+      title: newProjectTitle.trim(),
+      genre: newProjectGenre
+    };
+
+    if (!payload.title) return;
+
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newProjectTitle,
-          genre: newProjectGenre
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (data.project) {
+      const newProj = data.project || (data.id ? data : null);
+      if (newProj) {
         setIsCreateModalOpen(false);
         setNewProjectTitle('');
         await fetchProjects();
-        setCurrentProjectId(data.project.id);
+        setCurrentProjectId(newProj.id);
+        return newProj;
       }
     } catch (e) {
       alert('Lỗi tạo truyện: ' + e.message);
+      throw e;
     }
   };
 
-  const handleDeleteProject = async (id) => {
-    if (!confirm('Bạn có chắc muốn xóa toàn bộ dự án truyện này?')) return;
+  const handleDeleteProject = async (id, title) => {
+    const targetTitle = title || (projects.find(p => p.id === id)?.title) || 'này';
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn bộ truyện "${targetTitle}" cùng toàn bộ các chương và từ điển không?`)) return;
+
     try {
-      await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-      await fetchProjects();
-      setCurrentProjectId(null);
-      setCurrentProject(null);
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchProjects();
+        if (currentProjectId === id) {
+          setCurrentProjectId(null);
+          setCurrentProject(null);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert('Lỗi xóa: ' + (errData.error || errData.message || 'Thất bại'));
+      }
     } catch (e) {
       alert('Lỗi xóa: ' + e.message);
     }
@@ -273,28 +247,56 @@ export default function App() {
           </div>
 
           {/* Project Selector & Actions */}
-          <div className="flex items-center gap-3">
-            {/* Project Select Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-1.5 shadow-sm">
-              <span className="text-xs text-slate-400 font-medium hidden sm:inline">Truyện:</span>
+          <div className="flex items-center gap-2.5">
+            {/* Project Manager Button */}
+            <button
+              onClick={() => setIsProjectManagerOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-indigo-200 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm cursor-pointer"
+              title="Mở danh sách và quản lý tất cả các bộ truyện"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Quản lý truyện</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">
+                {projects.length}
+              </span>
+            </button>
+
+            {/* Quick Project Select Dropdown */}
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 rounded-xl px-2.5 py-1.5 shadow-sm">
+              <span className="text-xs text-slate-400 font-medium hidden md:inline">Đang mở:</span>
               <select
                 value={currentProjectId || ''}
                 onChange={e => setCurrentProjectId(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[180px] truncate"
+                className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer max-w-[150px] sm:max-w-[190px] truncate"
               >
-                {projects.map(p => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white">
-                    {p.title}
-                  </option>
-                ))}
+                {projects.length === 0 ? (
+                  <option value="" className="bg-slate-900 text-slate-400">Chưa có truyện nào</option>
+                ) : (
+                  projects.map(p => (
+                    <option key={p.id} value={p.id} className="bg-slate-900 text-white">
+                      {p.title}
+                    </option>
+                  ))
+                )}
               </select>
+
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => setIsProjectManagerOpen(true)}
                 title="Tạo truyện mới"
-                className="p-1 hover:bg-slate-800 rounded-lg text-indigo-400 hover:text-indigo-300 transition ml-1"
+                className="p-1 hover:bg-slate-800 rounded-lg text-indigo-400 hover:text-indigo-300 transition"
               >
                 <Plus className="w-4 h-4" />
               </button>
+
+              {currentProjectId && (
+                <button
+                  onClick={() => handleDeleteProject(currentProjectId, currentProject?.title)}
+                  title="Xóa bộ truyện đang chọn"
+                  className="p-1 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-400 transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* API Key Modal Button */}
@@ -468,15 +470,36 @@ export default function App() {
             )}
           </div>
         ) : (
-          <div className="p-12 text-center text-slate-500 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p className="font-semibold text-slate-300">Chưa có dự án truyện nào được chọn</p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition"
-            >
-              + Tạo Truyện Mới
-            </button>
+          <div className="flex-1 flex items-center justify-center p-6">
+            {activeTab === 'quick' ? (
+              <QuickTranslateTab
+                project={{ id: 'quick', title: 'Dịch Nhanh Trực Tiếp', genre: 'Tiên Hiệp', model: 'gemini-3.6-flash' }}
+                onUpdateProject={() => {}}
+                onSwitchToQueue={() => setIsProjectManagerOpen(true)}
+              />
+            ) : (
+              <div className="p-12 text-center text-slate-500 bg-slate-900/30 rounded-3xl border border-dashed border-slate-800 max-w-lg mx-auto my-8">
+                <BookOpen className="w-14 h-14 mx-auto mb-3 opacity-30 text-indigo-400" />
+                <h3 className="font-bold text-base text-slate-200">Chưa có dự án truyện nào được chọn</h3>
+                <p className="text-xs text-slate-400 mt-1 mb-5">
+                  Tạo mới hoặc chọn một bộ truyện từ danh sách để bắt đầu dịch hàng loạt, quản lý nhân vật và chuẩn hóa xưng hô.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setIsProjectManagerOpen(true)}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Layers className="w-4 h-4" /> Mở Quản Lý Truyện
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('quick')}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 text-amber-400" /> Dịch Nhanh
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -570,6 +593,17 @@ export default function App() {
       <ChangePasswordModal
         isOpen={isChangePassModalOpen}
         onClose={() => setIsChangePassModalOpen(false)}
+      />
+
+      {/* Project Manager Modal */}
+      <ProjectManagerModal
+        isOpen={isProjectManagerOpen}
+        onClose={() => setIsProjectManagerOpen(false)}
+        projects={projects}
+        currentProjectId={currentProjectId}
+        onSelectProject={(id) => setCurrentProjectId(id)}
+        onCreateProject={handleCreateProject}
+        onDeleteProject={handleDeleteProject}
       />
     </div>
   );
