@@ -25,6 +25,44 @@ if (initialConfig.apiKeys && initialConfig.apiKeys.length > 0) {
 }
 
 // ==========================================
+// 0. Authentication & Password Management
+// ==========================================
+router.post('/auth/login', (req, res) => {
+  const { password } = req.body;
+  const config = Store.getConfig();
+  const currentPass = (config.adminPassword || 'lilyhub888').trim();
+  if ((password || '').trim() !== currentPass) {
+    return res.status(401).json({ success: false, message: 'Mật khẩu truy cập không chính xác!' });
+  }
+  const token = `token_${Date.now()}_${uuidv4().replace(/-/g, '')}`;
+  res.json({ success: true, token, message: 'Đăng nhập thành công!' });
+});
+
+router.get('/auth/check', (req, res) => {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (token) {
+    return res.json({ authenticated: true });
+  }
+  res.status(401).json({ authenticated: false, message: 'Chưa đăng nhập' });
+});
+
+router.post('/auth/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.trim().length < 4) {
+    return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có ít nhất 4 ký tự.' });
+  }
+  const config = Store.getConfig();
+  const currentPass = (config.adminPassword || 'lilyhub888').trim();
+  if ((currentPassword || '').trim() !== currentPass) {
+    return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không đúng!' });
+  }
+  config.adminPassword = newPassword.trim();
+  Store.saveConfig(config);
+  res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
+});
+
+// ==========================================
 // 1. API Keys Management
 // ==========================================
 router.get('/keys', (req, res) => {

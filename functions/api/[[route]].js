@@ -334,6 +334,64 @@ export async function onRequest(context) {
 
   try {
     // ----------------------------------------------------
+    // AUTHENTICATION & PASSWORD MANAGEMENT
+    // ----------------------------------------------------
+    if (pathname === '/api/auth/login' && method === 'POST') {
+      const body = await request.json();
+      const inputPass = (body.password || '').trim();
+
+      const row = await db.prepare("SELECT value FROM config WHERE key = 'admin_password'").first();
+      const currentAdminPass = row && row.value ? row.value.trim() : 'lilyhub888';
+
+      if (inputPass !== currentAdminPass) {
+        return json({ success: false, message: 'Mật khẩu truy cập không chính xác!' }, 401);
+      }
+
+      const token = `token_${Date.now()}_${crypto.randomUUID().replace(/-/g, '')}`;
+      await db.prepare("INSERT INTO config (key, value) VALUES ('session_' || ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(token, JSON.stringify({ createdAt: Date.now() })).run();
+
+      return json({ success: true, token, message: 'Đăng nhập thành công!' });
+    }
+
+    if (pathname === '/api/auth/check') {
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+      if (!token) {
+        return json({ authenticated: false, message: 'Chưa đăng nhập' }, 401);
+      }
+
+      const row = await db.prepare("SELECT value FROM config WHERE key = 'session_' || ?").bind(token).first();
+      if (!row) {
+        return json({ authenticated: false, message: 'Phiên đăng nhập đã hết hạn' }, 401);
+      }
+
+      return json({ authenticated: true });
+    }
+
+    if (pathname === '/api/auth/change-password' && method === 'POST') {
+      const body = await request.json();
+      const { currentPassword, newPassword } = body;
+
+      if (!newPassword || newPassword.trim().length < 4) {
+        return errorJson('Mật khẩu mới phải có ít nhất 4 ký tự.', 400);
+      }
+
+      const row = await db.prepare("SELECT value FROM config WHERE key = 'admin_password'").first();
+      const currentAdminPass = row && row.value ? row.value.trim() : 'lilyhub888';
+
+      if ((currentPassword || '').trim() !== currentAdminPass) {
+        return errorJson('Mật khẩu hiện tại không đúng!', 400);
+      }
+
+      await db.prepare("INSERT INTO config (key, value) VALUES ('admin_password', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(newPassword.trim()).run();
+
+      return json({ success: true, message: 'Đổi mật khẩu thành công!' });
+    }
+
+    // ----------------------------------------------------
     // API KEYS
     // ----------------------------------------------------
     if (pathname === '/api/keys') {

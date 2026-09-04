@@ -11,9 +11,14 @@ import {
   Trash2,
   Sparkles,
   ExternalLink,
-  Zap
+  Zap,
+  Lock,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 
+import LoginView from './components/LoginView';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import KeyManagerModal from './components/KeyManagerModal';
 import ExportModal from './components/ExportModal';
 import ImportModal from './components/ImportModal';
@@ -41,16 +46,56 @@ export default function App() {
   // Key count
   const [keysCount, setKeysCount] = useState(0);
 
-  useEffect(() => {
-    fetchProjects();
-    fetchKeysCount();
-  }, []);
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
 
   useEffect(() => {
-    if (currentProjectId) {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('dichtruyen_auth_token') || sessionStorage.getItem('dichtruyen_auth_token');
+    if (!token) {
+      setIsAuthenticated(false);
+      setAuthChecking(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth/check', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.authenticated) {
+        setIsAuthenticated(true);
+        fetchProjects();
+        fetchKeysCount();
+      } else {
+        localStorage.removeItem('dichtruyen_auth_token');
+        sessionStorage.removeItem('dichtruyen_auth_token');
+        setIsAuthenticated(false);
+      }
+    } catch (e) {
+      setIsAuthenticated(false);
+    } finally {
+      setAuthChecking(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn khóa và đăng xuất khỏi hệ thống không?')) {
+      localStorage.removeItem('dichtruyen_auth_token');
+      sessionStorage.removeItem('dichtruyen_auth_token');
+      setIsAuthenticated(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && currentProjectId) {
       fetchProjectDetail(currentProjectId);
     }
-  }, [currentProjectId]);
+  }, [currentProjectId, isAuthenticated]);
 
   const fetchKeysCount = async () => {
     try {
@@ -181,6 +226,29 @@ export default function App() {
     setActiveTab('editor');
   };
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#090D16] flex items-center justify-center text-slate-400 font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-xs font-medium tracking-wide text-slate-400">Đang kiểm tra bảo mật...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          fetchProjects();
+          fetchKeysCount();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
       {/* Top Navbar */}
@@ -251,10 +319,30 @@ export default function App() {
             <button
               onClick={() => setIsExportModalOpen(true)}
               disabled={!currentProject}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-lg shadow-indigo-600/20"
+              className="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-lg shadow-indigo-600/20"
             >
               <Download className="w-4 h-4" />
               <span>Xuất File</span>
+            </button>
+
+            {/* Change Password Button */}
+            <button
+              onClick={() => setIsChangePassModalOpen(true)}
+              title="Đổi mật khẩu truy cập"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-indigo-500/50 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden xl:inline">Đổi pass</span>
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              title="Khóa và Đăng xuất"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 transition flex items-center gap-1.5 text-xs cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Khóa web</span>
             </button>
           </div>
         </div>
@@ -477,6 +565,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePassModalOpen}
+        onClose={() => setIsChangePassModalOpen(false)}
+      />
     </div>
   );
 }
