@@ -219,14 +219,21 @@ async function getApiKeys(db, env) {
     try {
       const row = await db.prepare("SELECT value FROM config WHERE key = 'apiKeys'").first();
       if (row && row.value) {
-        keys = JSON.parse(row.value);
+        const parsed = JSON.parse(row.value);
+        if (Array.isArray(parsed)) {
+          keys = parsed;
+        } else if (parsed && Array.isArray(parsed.apiKeys)) {
+          keys = parsed.apiKeys;
+        } else if (typeof parsed === 'string') {
+          keys = [parsed];
+        }
       }
     } catch (e) {}
   }
   if ((!keys || keys.length === 0) && env && env.GEMINI_API_KEY) {
     keys = env.GEMINI_API_KEY.split(',').map(k => k.trim()).filter(Boolean);
   }
-  return keys || [];
+  return Array.isArray(keys) ? keys : [];
 }
 
 // Helper: Call Gemini with Auto-rotation
@@ -332,7 +339,12 @@ export async function onRequest(context) {
     if (pathname === '/api/keys') {
       if (method === 'GET') {
         const keys = await getApiKeys(db, env);
-        return json({ keys: keys.map(k => ({ key: k, status: 'active' })) });
+        return json({
+          keys: (keys || []).map(k => ({
+            key: typeof k === 'object' ? (k.key || '') : k,
+            status: 'active'
+          }))
+        });
       }
       if (method === 'POST') {
         const body = await request.json();
@@ -363,11 +375,11 @@ export async function onRequest(context) {
 
     if (pathname === '/api/models' && method === 'GET') {
       return json([
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Khuyên dùng - Nhanh & Mượt)' },
+        { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Khuyên dùng - Đời mới nhất, Nhanh & Chuẩn)' },
+        { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite (Siêu tiết kiệm Quota)' },
+        { id: 'gemini-3.5-pro', name: 'Gemini 3.5 Pro (Chất lượng văn học cao cấp)' },
         { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Chất lượng dịch cao cấp)' },
-        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
+        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' }
       ]);
     }
 

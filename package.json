@@ -22,5 +22,8 @@
     "multer": "^2.3.0",
     "pdf-parse": "^2.4.5",
     "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "wrangler": "^4.129.0"
   }
 }
