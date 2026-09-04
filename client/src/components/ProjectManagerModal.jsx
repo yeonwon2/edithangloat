@@ -63,7 +63,7 @@ export default function ProjectManagerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-3xl bg-[#111726] border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">

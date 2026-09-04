@@ -14,7 +14,9 @@ import {
   Zap,
   Lock,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import LoginView from './components/LoginView';
@@ -48,10 +50,19 @@ export default function App() {
   // Key count
   const [keysCount, setKeysCount] = useState(0);
 
-  // Authentication State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authChecking, setAuthChecking] = useState(true);
-  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
+  // Theme State: 'light' | 'dark' (Default to light for eye-comfort)
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('dichtruyen_theme') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('dichtruyen_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   useEffect(() => {
     checkAuth();
@@ -202,7 +213,7 @@ export default function App() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-[#090D16] flex items-center justify-center text-slate-400 font-sans">
+      <div className="min-h-screen app-bg flex items-center justify-center text-slate-400 font-sans">
         <div className="flex flex-col items-center gap-3">
           <div className="w-9 h-9 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
           <span className="text-xs font-medium tracking-wide text-slate-400">Đang kiểm tra bảo mật...</span>
@@ -214,6 +225,8 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <LoginView
+        theme={theme}
+        onToggleTheme={toggleTheme}
         onLoginSuccess={() => {
           setIsAuthenticated(true);
           fetchProjects();
@@ -224,7 +237,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen app-bg text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -235,7 +248,7 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-purple-300">
+                <span className="brand-title font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-purple-300">
                   DichTruyenPro
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30 font-semibold uppercase tracking-wider">
@@ -325,6 +338,29 @@ export default function App() {
             >
               <Download className="w-4 h-4" />
               <span>Xuất File</span>
+            </button>
+
+            {/* Theme Toggle Button (Sáng / Tối) */}
+            <button
+              onClick={toggleTheme}
+              title={theme === 'light' ? 'Chuyển sang giao diện Tối (Dark)' : 'Chuyển sang giao diện Sáng (Light)'}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition cursor-pointer shadow-sm ${
+                theme === 'light'
+                  ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
+                  : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+              }`}
+            >
+              {theme === 'light' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <span className="hidden md:inline font-bold">Theme Sáng</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-indigo-400" />
+                  <span className="hidden md:inline font-bold">Theme Tối</span>
+                </>
+              )}
             </button>
 
             {/* Change Password Button */}

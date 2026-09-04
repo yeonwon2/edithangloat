@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Lock, Eye, EyeOff, Sparkles, Shield, KeyRound, ArrowRight, BookOpen, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Sparkles, Shield, KeyRound, ArrowRight, BookOpen, CheckCircle, Sun, Moon } from 'lucide-react';
 
-export default function LoginView({ onLoginSuccess }) {
+export default function LoginView({ onLoginSuccess, theme = 'light', onToggleTheme }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -50,7 +50,35 @@ export default function LoginView({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#090D16] text-slate-100 font-sans selection:bg-indigo-500 selection:text-white px-4">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden app-bg text-slate-100 font-sans selection:bg-indigo-500 selection:text-white px-4">
+      {/* Top Corner Theme Switcher */}
+      {onToggleTheme && (
+        <div className="absolute top-4 right-4 z-20">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className={`px-3 py-2 rounded-2xl border transition shadow-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+              theme === 'light'
+                ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
+                : 'bg-slate-900/80 hover:bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
+            }`}
+            title={theme === 'light' ? 'Chuyển sang giao diện Tối' : 'Chuyển sang giao diện Sáng'}
+          >
+            {theme === 'light' ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <span className="font-bold">Theme Sáng</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-indigo-400" />
+                <span className="font-bold">Theme Tối</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Dynamic Ambient Background Glows */}
       <div className="absolute top-[-15%] left-[-10%] w-[550px] h-[550px] rounded-full bg-gradient-to-br from-indigo-600/25 to-purple-600/10 blur-[130px] pointer-events-none" />
       <div className="absolute bottom-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tl from-emerald-500/15 via-cyan-500/10 to-transparent blur-[140px] pointer-events-none" />
@@ -71,7 +99,7 @@ export default function LoginView({ onLoginSuccess }) {
           isShaking ? 'animate-shake' : ''
         }`}
       >
-        <div className="bg-[#111726]/80 backdrop-blur-2xl border border-slate-700/50 rounded-3xl p-8 sm:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_40px_rgba(99,102,241,0.1)]">
+        <div className="login-card bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 rounded-3xl p-8 sm:p-10 shadow-2xl">
           
           {/* Top Logo & Title */}
           <div className="text-center mb-8">
@@ -106,7 +134,7 @@ export default function LoginView({ onLoginSuccess }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu của bạn..."
                   autoFocus
-                  className="w-full bg-[#0B0F19]/90 border border-slate-700/80 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-500 outline-none transition-all pr-11"
+                  className="w-full bg-slate-950 border border-slate-700/80 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-500 outline-none transition-all pr-11"
                 />
                 <button
                   type="button"

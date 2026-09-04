@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg: #090d16;
+  --app-header-bg: rgba(2, 6, 23, 0.85);
+  --app-card-bg: #0f172a;
+  --app-border: #1e293b;
+  --app-text: #f8fafc;
+}
+
+[data-theme="light"] {
+  --app-bg: #f8fafc;
+  --app-header-bg: rgba(255, 255, 255, 0.9);
+  --app-card-bg: #ffffff;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
+
+  /* Inverted slate colors for Clean Light Theme */
+  --color-slate-950: #ffffff;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #f8fafc;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -7,10 +37,15 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: var(--app-bg, #0f172a);
+    color: var(--app-text, #f8fafc);
     min-height: 100vh;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
+}
+
+.app-bg {
+  background-color: var(--app-bg, #090d16);
 }
 
 /* Novel Reading Typography Classes */
@@ -45,4 +80,133 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.8);
 }
+
+/* Light Theme Enhancements */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+/* Header blur & borders in Light Mode */
+[data-theme="light"] header {
+  background-color: var(--app-header-bg) !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Brand logo title gradient in Light Mode */
+[data-theme="light"] .brand-title {
+  background-image: linear-gradient(to right, #1e1b4b, #4338ca, #6b21a8) !important;
+}
+
+/* Surface Cards & Shadow Polish */
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-900\/90,
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900\/50,
+[data-theme="light"] .bg-slate-950,
+[data-theme="light"] .bg-slate-950\/80,
+[data-theme="light"] .bg-slate-950\/60,
+[data-theme="light"] .bg-slate-950\/40 {
+  background-color: #ffffff;
+}
+
+[data-theme="light"] .shadow-xl,
+[data-theme="light"] .shadow-lg,
+[data-theme="light"] .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .shadow-2xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Modal Backdrop */
+[data-theme="light"] .fixed.inset-0[class*="bg-black"] {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Form Inputs, Textarea, Select */
+[data-theme="light"] select,
+[data-theme="light"] select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Headings & Text that had text-white hardcoded */
+[data-theme="light"] h1.text-white,
+[data-theme="light"] h2.text-white,
+[data-theme="light"] h3.text-white,
+[data-theme="light"] h4.text-white,
+[data-theme="light"] h5.text-white,
+[data-theme="light"] h6.text-white,
+[data-theme="light"] p.text-white,
+[data-theme="light"] strong.text-white,
+[data-theme="light"] td.text-white,
+[data-theme="light"] th.text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-800:hover,
+[data-theme="light"] .hover\:bg-slate-900:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Keep text-white WHITE inside colored buttons/badges */
+[data-theme="light"] button.text-white,
+[data-theme="light"] button .text-white,
+[data-theme="light"] a.text-white,
+[data-theme="light"] [class*="bg-indigo"] .text-white,
+[data-theme="light"] [class*="bg-indigo"].text-white,
+[data-theme="light"] [class*="bg-purple"] .text-white,
+[data-theme="light"] [class*="bg-purple"].text-white,
+[data-theme="light"] [class*="bg-emerald"] .text-white,
+[data-theme="light"] [class*="bg-emerald"].text-white,
+[data-theme="light"] [class*="bg-amber"] .text-white,
+[data-theme="light"] [class*="bg-amber"].text-white,
+[data-theme="light"] [class*="bg-rose"] .text-white,
+[data-theme="light"] [class*="bg-rose"].text-white,
+[data-theme="light"] [class*="bg-red"] .text-white,
+[data-theme="light"] [class*="bg-red"].text-white,
+[data-theme="light"] [class*="bg-blue"] .text-white,
+[data-theme="light"] [class*="bg-blue"].text-white,
+[data-theme="light"] [class*="from-"].text-white,
+[data-theme="light"] [class*="gradient"] .text-white {
+  color: #ffffff !important;
+}
+
+/* Table header in light mode */
+[data-theme="light"] thead {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+}
+
+/* Login card in Light Mode */
+[data-theme="light"] .login-card {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+}
+
 
