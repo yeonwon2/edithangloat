@@ -679,11 +679,10 @@ async function extractEpubText(arrayBuffer) {
 function normalizeModel(model) {
   if (!model) return 'gemini-3.6-flash';
   const m = model.trim().toLowerCase();
-  if (m.includes('2.0') || m.includes('1.5')) {
-    if (m.includes('lite')) return 'gemini-3.5-flash-lite';
-    return 'gemini-3.6-flash';
+  if (m.includes('lite') || m.includes('3.1')) {
+    return 'gemini-3.1-flash-lite';
   }
-  return model.trim();
+  return 'gemini-3.6-flash';
 }
 
 function splitTextIntoChapters(rawText, { singleChapter = false, customPattern = '', fallbackTitle = 'Chương 1' } = {}) {

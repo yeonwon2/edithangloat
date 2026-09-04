@@ -72,7 +72,7 @@ export default function ProjectManagerModal({
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 Quản Lý Dự Án Dịch Truyện
                 <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">
                   {projects.length} bộ truyện
@@ -175,7 +175,7 @@ export default function ProjectManagerModal({
                         </div>
 
                         {/* Title */}
-                        <h4 className="text-base font-bold text-white line-clamp-1 mb-1 group-hover:text-indigo-300 transition-colors">
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1 mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
                           {p.title}
                         </h4>
 

@@ -131,6 +131,7 @@ class BatchQueue {
             currentProj.chapters[saveIdx].issues = result.issues;
             currentProj.chapters[saveIdx].chineseCharCount = result.chineseCharCount;
             currentProj.chapters[saveIdx].pronounAudit = result.pronounAudit;
+            currentProj.chapters[saveIdx].qaReport = result.qaReport;
 
             // Auto-accumulate newly discovered characters into project knowledge base
             if (result.newDiscoveredEntities && result.newDiscoveredEntities.length > 0) {

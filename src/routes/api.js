@@ -702,6 +702,514 @@ router.get('/projects/:id/queue/status', (req, res) => {
 });
 
 // ==========================================
+// 5.1 QA, Pronoun Consistency & Batch Replace
+// ==========================================
+
+const WORD_CHAR = "A-Za-z0-9_\\u00C0-\\u1EFF";
+
+function escapeRegex(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function wholeWordRegex(term) {
+  const escaped = escapeRegex(term);
+  return new RegExp(`(?<![${WORD_CHAR}])(?:${escaped})(?![${WORD_CHAR}])`, "gu");
+}
+
+function applyReplacements(text, rules, wholeWord = false) {
+  let result = text || "";
+  let count = 0;
+  for (const { find, replace } of (rules || [])) {
+    if (!find) continue;
+    if (wholeWord) {
+      const re = wholeWordRegex(find);
+      const matches = result.match(re);
+      if (matches) {
+        count += matches.length;
+        result = result.replace(re, replace || "");
+      }
+    } else {
+      const parts = result.split(find);
+      count += parts.length - 1;
+      result = parts.join(replace || "");
+    }
+  }
+  return { text: result, count };
+}
+
+function previewReplacements(text, rules, wholeWord = false) {
+  let count = 0;
+  const samples = [];
+  for (const { find } of (rules || [])) {
+    if (!find) continue;
+    if (wholeWord) {
+      const re = wholeWordRegex(find);
+      const matches = [...text.matchAll(re)];
+      count += matches.length;
+      matches.slice(0, 3).forEach(m => {
+        const start = Math.max(0, m.index - 30);
+        const end = Math.min(text.length, m.index + m[0].length + 30);
+        samples.push(text.slice(start, end).trim());
+      });
+    } else {
+      let from = 0;
+      while (from < text.length) {
+        const idx = text.indexOf(find, from);
+        if (idx === -1) break;
+        count++;
+        if (samples.length < 3) {
+          const start = Math.max(0, idx - 30);
+          const end = Math.min(text.length, idx + find.length + 30);
+          samples.push(text.slice(start, end).trim());
+        }
+        from = idx + find.length;
+      }
+    }
+  }
+  return { count, samples };
+}
+
+function extractPronounAudit(text, characters = [], pronounMatrix = []) {
+  if (!text) return { charactersDetected: [], pronounPairs: [] };
+
+  const detectedChars = [];
+  for (const c of (characters || [])) {
+    const name = c.vi || c.zh;
+    if (!name || name.length < 2) continue;
+    const escaped = escapeRegex(name);
+    const matches = text.match(new RegExp(`\\b${escaped}\\b`, 'gi'));
+    if (matches && matches.length > 0) {
+      detectedChars.push({ name, count: matches.length, gender: c.gender || 'Chưa rõ', role: c.role || '' });
+    }
+  }
+
+  const pairs = [];
+  const addedKeys = new Set();
+
+  for (const p of (pronounMatrix || [])) {
+    const sName = p.speakerVi || p.speakerZh;
+    const lName = p.listenerVi || p.listenerZh;
+    if (!sName || !lName) continue;
+
+    const hasSpeaker = text.includes(sName);
+    const hasSelf = p.speakerCallsSelf ? text.includes(p.speakerCallsSelf) : false;
+    const hasListener = p.speakerCallsListener ? text.includes(p.speakerCallsListener) : false;
+
+    if (hasSpeaker && (hasSelf || hasListener)) {
+      const key = `${sName}➔${lName}`;
+      if (!addedKeys.has(key)) {
+        addedKeys.add(key);
+        pairs.push({
+          speaker: sName,
+          listener: lName,
+          speakerSelf: p.speakerCallsSelf || 'ta',
+          speakerCallsOther: p.speakerCallsListener || 'ngươi',
+          status: 'consistent'
+        });
+      }
+    }
+  }
+
+  return { charactersDetected: detectedChars, pronounPairs: pairs };
+}
+
+// 1. Cross-chapter Pronoun Consistency
+router.get('/projects/:id/pronoun-consistency', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const characters = project.characters || [];
+  const pronounMatrix = project.pronounMatrix || [];
+  const chapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
+
+  const inconsistencies = [];
+  const crossChapterPairsMap = new Map();
+  let totalPairsChecked = 0;
+
+  for (const ch of chapters) {
+    const text = ch.translatedText || '';
+    if (!text.trim()) continue;
+
+    const audit = extractPronounAudit(text, characters, pronounMatrix);
+
+    const quotes = text.match(/[“"][^”"\n]{3,150}[”"]/g) || [];
+    for (const q of quotes) {
+      if (/(?:Hoàng thượng|Bệ hạ|nương nương|Hoàng hậu)/i.test(q) && /\btôi\b/i.test(q)) {
+        inconsistencies.push({
+          chapterId: ch.id,
+          chapterIndex: ch.index,
+          chapterTitle: ch.translatedTitle || ch.title,
+          severity: 'warning',
+          issue: 'Xưng hô hiện đại "tôi" trước mặt Hoàng thượng / Nương nương',
+          snippet: q.slice(0, 100),
+          suggestedFix: 'Đổi thành "thảo dân" hoặc "dân nữ"'
+        });
+      }
+    }
+
+    for (const p of audit.pronounPairs) {
+      totalPairsChecked++;
+      const pairKey = `${p.speaker} ➔ ${p.listener}`;
+      if (!crossChapterPairsMap.has(pairKey)) {
+        crossChapterPairsMap.set(pairKey, {
+          speaker: p.speaker,
+          listener: p.listener,
+          speakerSelf: p.speakerCallsSelf,
+          speakerCallsOther: p.speakerCallsOther,
+          chapters: [ch.index],
+          isConsistent: p.status !== 'inconsistent'
+        });
+      } else {
+        const entry = crossChapterPairsMap.get(pairKey);
+        if (!entry.chapters.includes(ch.index)) {
+          entry.chapters.push(ch.index);
+        }
+        if (p.status === 'inconsistent') {
+          entry.isConsistent = false;
+        }
+      }
+    }
+  }
+
+  const crossChapterMatrix = Array.from(crossChapterPairsMap.values());
+  const consistencyRate = totalPairsChecked > 0
+    ? Math.max(0, Math.min(100, Math.round(((totalPairsChecked - inconsistencies.length) / totalPairsChecked) * 1000) / 10))
+    : 100;
+
+  res.json({
+    success: true,
+    overallConsistency: consistencyRate,
+    totalChaptersAudited: chapters.length,
+    totalPairsAudited: totalPairsChecked,
+    crossChapterMatrix,
+    inconsistencies,
+    matrixRulesCount: pronounMatrix.length,
+    charactersCount: characters.length
+  });
+});
+
+// 2. Batch Auto-Fix Pronouns & Hanzi
+router.post('/projects/:id/batch-fix-pronouns', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  let fixedCount = 0;
+  let totalHanziCleaned = 0;
+
+  for (let i = 0; i < (project.chapters || []).length; i++) {
+    const ch = project.chapters[i];
+    if (!ch.translatedText) continue;
+
+    const origText = ch.translatedText;
+    const cleanedText = PostProcessor.autoFix(ch.translatedText, project.terms || []);
+    const cleanedTitle = PostProcessor.autoFix(ch.translatedTitle || ch.title, project.terms || []);
+
+    const hanBefore = (origText.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const hanAfter = (cleanedText.match(/[\u4e00-\u9fa5]/g) || []).length;
+    totalHanziCleaned += Math.max(0, hanBefore - hanAfter);
+
+    const qa = PostProcessor.audit(cleanedText, ch.originalText, {
+      characters: project.characters || [],
+      terms: project.terms || [],
+      pronounMatrix: project.pronounMatrix || []
+    });
+
+    ch.translatedText = cleanedText;
+    ch.translatedTitle = cleanedTitle;
+    ch.qaReport = qa;
+    ch.issues = qa.issues.map(it => it.message);
+    ch.chineseCharCount = qa.stats.chineseCharCount;
+
+    fixedCount++;
+  }
+
+  Store.saveProject(project);
+
+  res.json({
+    success: true,
+    message: `Đã chuẩn hóa và làm sạch thành công ${fixedCount} chương! Đã triệt tiêu ${totalHanziCleaned} chữ Hán tồn đọng.`,
+    fixedChaptersCount: fixedCount,
+    totalHanziCleaned
+  });
+});
+
+// 3. Batch Replace Preview
+router.post('/projects/:id/batch-replace/preview', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const { rules = [], scope = 'story', chapterId = null, wholeWord = false } = req.body;
+  const validRules = (rules || []).filter(r => String(r.find || '').trim().length > 0);
+  if (!validRules.length) return res.json({ success: true, totalMatches: 0, chapterCount: 0, chapterMatches: [] });
+
+  let targetChapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
+  if (scope === 'chapter' && chapterId) {
+    targetChapters = targetChapters.filter(c => c.id === chapterId);
+  }
+
+  let totalMatches = 0;
+  const chapterMatches = [];
+
+  for (const ch of targetChapters) {
+    const text = ch.translatedText || '';
+    if (!text) continue;
+    const prev = previewReplacements(text, validRules, wholeWord);
+    if (prev.count > 0) {
+      totalMatches += prev.count;
+      chapterMatches.push({
+        chapterId: ch.id,
+        chapterIndex: ch.index,
+        title: ch.translatedTitle || ch.title,
+        count: prev.count,
+        samples: prev.samples
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    totalMatches,
+    chapterCount: chapterMatches.length,
+    chapterMatches
+  });
+});
+
+// 4. Batch Replace Apply
+router.post('/projects/:id/batch-replace/apply', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const { rules = [], scope = 'story', chapterId = null, wholeWord = false } = req.body;
+  const validRules = (rules || []).filter(r => String(r.find || '').trim().length > 0);
+  if (!validRules.length) return res.status(400).json({ error: 'Không có quy tắc thay thế hợp lệ' });
+
+  let targetChapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
+  if (scope === 'chapter' && chapterId) {
+    targetChapters = targetChapters.filter(c => c.id === chapterId);
+  }
+
+  project.settings = project.settings || {};
+  project.settings.lastBatchReplaceUndo = {
+    timestamp: new Date().toISOString(),
+    scope,
+    rules: validRules,
+    rows: targetChapters.map(ch => ({
+      id: ch.id,
+      translatedText: ch.translatedText,
+      translatedTitle: ch.translatedTitle,
+      qaReport: ch.qaReport,
+      issues: ch.issues,
+      chineseCharCount: ch.chineseCharCount
+    }))
+  };
+
+  let totalReplaced = 0;
+  let chaptersUpdated = 0;
+
+  for (const ch of targetChapters) {
+    const origText = ch.translatedText || '';
+    const rep = applyReplacements(origText, validRules, wholeWord);
+    if (rep.count > 0) {
+      totalReplaced += rep.count;
+      chaptersUpdated++;
+
+      const cleanedText = PostProcessor.autoFix(rep.text, project.terms || []);
+      const qa = PostProcessor.audit(cleanedText, ch.originalText, {
+        characters: project.characters || [],
+        terms: project.terms || [],
+        pronounMatrix: project.pronounMatrix || []
+      });
+
+      ch.translatedText = cleanedText;
+      ch.qaReport = qa;
+      ch.issues = qa.issues.map(i => i.message);
+      ch.chineseCharCount = qa.stats.chineseCharCount;
+    }
+  }
+
+  Store.saveProject(project);
+
+  res.json({
+    success: true,
+    message: `Đã thay thế thành công ${totalReplaced} vị trí trong ${chaptersUpdated} chương!`,
+    totalReplaced,
+    chaptersUpdated,
+    canUndo: true
+  });
+});
+
+// 5. Batch Replace / QA Undo
+router.post('/projects/:id/batch-replace/undo', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const settings = project.settings || {};
+  const undo = settings.lastBatchReplaceUndo || settings.lastStoryQaUndo;
+  if (!undo || !undo.rows || !undo.rows.length) {
+    return res.status(400).json({ error: 'Không có thao tác nào để hoàn tác!' });
+  }
+
+  for (const row of undo.rows) {
+    const ch = (project.chapters || []).find(c => c.id === row.id);
+    if (ch) {
+      ch.translatedText = row.translatedText;
+      ch.translatedTitle = row.translatedTitle;
+      ch.qaReport = row.qaReport;
+      ch.issues = row.issues;
+      ch.chineseCharCount = row.chineseCharCount;
+    }
+  }
+
+  delete settings.lastBatchReplaceUndo;
+  delete settings.lastStoryQaUndo;
+  project.settings = settings;
+  Store.saveProject(project);
+
+  res.json({
+    success: true,
+    message: `Đã hoàn tác thành công cho ${undo.rows.length} chương!`,
+    restoredCount: undo.rows.length
+  });
+});
+
+// 6. Story-wide QA Scan
+router.get('/projects/:id/story-qa', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const characters = project.characters || [];
+  const terms = project.terms || [];
+  const pronounMatrix = project.pronounMatrix || [];
+  const settings = project.settings || {};
+  const chapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
+
+  const groupMap = new Map();
+  let totalIssues = 0;
+  const chapterSummaries = [];
+
+  for (const ch of chapters) {
+    const text = ch.translatedText || '';
+    if (!text) continue;
+    const qa = PostProcessor.audit(text, ch.originalText || '', { characters, terms, pronounMatrix });
+    let chIssueCount = 0;
+
+    for (const issue of qa.issues) {
+      totalIssues++;
+      chIssueCount++;
+
+      const val = issue.targetSnippet || issue.message;
+      const key = `${issue.type}:${val}`;
+      if (!groupMap.has(key)) {
+        groupMap.set(key, {
+          key,
+          type: issue.type,
+          title: issue.message ? (issue.type === 'chinese' ? 'Sót chữ Hán' : (issue.type === 'pronoun' ? 'Lệch xưng hô' : (issue.type === 'convert' ? 'Lỗi convert' : issue.type))) : issue.type,
+          value: val,
+          severity: issue.severity,
+          instruction: issue.instruction || '',
+          replacement: '',
+          isSafe: issue.type === 'ai_meta' || issue.type === 'convert' || issue.type === 'loop' || issue.type === 'spacing',
+          count: 0,
+          chapterIds: new Set(),
+          locations: []
+        });
+      }
+
+      const grp = groupMap.get(key);
+      grp.count++;
+      grp.chapterIds.add(ch.id);
+      if (grp.locations.length < 5) {
+        grp.locations.push({
+          chapterId: ch.id,
+          chapterIndex: ch.index,
+          chapterTitle: ch.translatedTitle || ch.title,
+          snippet: val
+        });
+      }
+    }
+
+    if (chIssueCount > 0) {
+      chapterSummaries.push({
+        id: ch.id,
+        chapterIndex: ch.index,
+        title: ch.translatedTitle || ch.title,
+        issueCount: chIssueCount
+      });
+    }
+  }
+
+  const groups = Array.from(groupMap.values()).map(g => ({
+    ...g,
+    chapterCount: g.chapterIds.size,
+    chapterIds: Array.from(g.chapterIds)
+  })).sort((a, b) => b.count - a.count);
+
+  const canUndo = Boolean(settings.lastBatchReplaceUndo || settings.lastStoryQaUndo);
+
+  res.json({
+    success: true,
+    totalChapters: chapters.length,
+    totalIssues,
+    groups,
+    chapterSummaries,
+    canUndo
+  });
+});
+
+// 7. Story QA Apply All Safe
+router.post('/projects/:id/story-qa/apply-all-safe', (req, res) => {
+  const project = Store.getProject(req.params.id);
+  if (!project) return res.status(404).json({ error: 'Không tìm thấy dự án' });
+
+  const characters = project.characters || [];
+  const terms = project.terms || [];
+  const pronounMatrix = project.pronounMatrix || [];
+  const settings = project.settings || {};
+  const chapters = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText);
+
+  // Save undo snapshot
+  settings.lastStoryQaUndo = {
+    timestamp: new Date().toISOString(),
+    rows: chapters.map(ch => ({
+      id: ch.id,
+      translatedText: ch.translatedText,
+      translatedTitle: ch.translatedTitle,
+      qaReport: ch.qaReport,
+      issues: ch.issues,
+      chineseCharCount: ch.chineseCharCount
+    }))
+  };
+  project.settings = settings;
+
+  let fixedCount = 0;
+
+  for (const ch of chapters) {
+    if (!ch.translatedText) continue;
+    const cleanedText = PostProcessor.autoFix(ch.translatedText, terms);
+    const cleanedTitle = PostProcessor.autoFix(ch.translatedTitle || ch.title, terms);
+
+    const qa = PostProcessor.audit(cleanedText, ch.originalText || '', { characters, terms, pronounMatrix });
+
+    ch.translatedText = cleanedText;
+    ch.translatedTitle = cleanedTitle;
+    ch.qaReport = qa;
+    ch.issues = qa.issues.map(i => i.message);
+    ch.chineseCharCount = qa.stats.chineseCharCount;
+
+    fixedCount++;
+  }
+
+  Store.saveProject(project);
+
+  res.json({
+    success: true,
+    message: `Đã áp dụng sửa chữa an toàn thành công cho ${fixedCount} chương!`,
+    fixedChaptersCount: fixedCount,
+    canUndo: true
+  });
+});
+
+// ==========================================
 // 6. Export Services (TXT, ZIP, DOCX, EPUB)
 // ==========================================
 router.get('/projects/:id/export/txt', (req, res) => {

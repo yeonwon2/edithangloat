@@ -127,11 +127,8 @@ class GeminiPool {
   normalizeModel(model) {
     if (!model) return 'gemini-3.6-flash';
     const m = model.trim().toLowerCase();
-    if (m.includes('2.0') || m.includes('1.5')) {
-      if (m.includes('lite')) return 'gemini-3.5-flash-lite';
-      return 'gemini-3.6-flash';
-    }
-    return model.trim();
+    if (m.includes('lite') || m.includes('3.1')) return 'gemini-3.1-flash-lite';
+    return 'gemini-3.6-flash';
   }
 
   async testKey(apiKey, preferredModel = 'gemini-3.6-flash') {
@@ -139,11 +136,8 @@ class GeminiPool {
     const candidateModels = [
       normPreferred,
       'gemini-3.6-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro'
+      'gemini-3.5-flash-lite'
     ];
     const uniqueCandidates = Array.from(new Set(candidateModels.filter(Boolean)));
 
@@ -190,7 +184,7 @@ class GeminiPool {
   async callGeminiWithRetry({
     prompt,
     systemInstruction = '',
-    model = 'gemini-3.5-flash-lite',
+    model = 'gemini-3.6-flash',
     temperature = 0.3,
     maxRetries = 5,
     providedKey = null
@@ -202,10 +196,7 @@ class GeminiPool {
     const fallbackChain = [
       normModel,
       'gemini-3.6-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-3.5-flash',
-      'gemini-2.5-flash'
+      'gemini-3.1-flash-lite'
     ].filter(Boolean);
     let modelIndex = 0;
 

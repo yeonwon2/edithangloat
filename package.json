@@ -24,6 +24,7 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
+    "puppeteer-core": "^25.10.0",
     "wrangler": "^4.129.0"
   }
 }

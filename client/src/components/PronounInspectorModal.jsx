@@ -220,6 +220,17 @@ export default function PronounInspectorModal({ isOpen, onClose, project, select
             <BookOpen className="w-4 h-4" />
             Quy Chuẩn Ma Trận ({matrixRules.length})
           </button>
+          <button
+            onClick={() => setActiveTab('story-qa')}
+            className={`py-3 px-4 text-xs font-semibold border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'story-qa'
+                ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <SearchCheck className="w-4 h-4" />
+            Trung Tâm QA Toàn Truyện {storyQaData?.totalIssues ? `(${storyQaData.totalIssues})` : ''}
+          </button>
         </div>
 
         {/* Content */}
@@ -508,7 +519,7 @@ export default function PronounInspectorModal({ isOpen, onClose, project, select
           )}
 
           {/* TAB 4: TRUNG TÂM QA TOÀN TRUYỆN */}
-          {activeTab === 'storyqa' && (
+          {activeTab === 'story-qa' && (
             <div className="space-y-5">
               {/* Action Banner */}
               <div className="p-4 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/50 border border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
