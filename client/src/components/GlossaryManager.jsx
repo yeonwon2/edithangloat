@@ -24,18 +24,23 @@ export default function GlossaryManager({ project, onUpdateProject }) {
   const pronounMatrix = project?.pronounMatrix || [];
   const terms = project?.terms || [];
 
-  const handleAutoScan = async () => {
+  const handleAutoScan = async (scanMode = 'all') => {
     if (!project.chapters || project.chapters.length === 0) {
       alert('Vui lòng thêm ít nhất 1 chương truyện trước để AI có văn bản phân tích!');
       return;
     }
     setScanning(true);
-    setStatusMsg({ type: 'info', text: 'Gemini đang đọc các chương đầu để trích xuất nhân vật và quy tắc xưng hô...' });
+    setStatusMsg({
+      type: 'info',
+      text: scanMode === 'all'
+        ? 'Gemini đang quét sâu đa phân đoạn qua toàn bộ các chương để trích xuất nhân vật và ma trận xưng hô...'
+        : 'Gemini đang đọc các chương gần nhất để bổ sung nhân vật...'
+    });
     try {
       const res = await fetch(`/api/projects/${project.id}/auto-scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({ scanMode })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Lỗi quét tự động');
@@ -43,7 +48,7 @@ export default function GlossaryManager({ project, onUpdateProject }) {
       onUpdateProject(data.project);
       setStatusMsg({
         type: 'success',
-        text: `Quét thành công! Đã thêm: ${data.added.characters} nhân vật, ${data.added.pronounMatrix} quy tắc xưng hô, ${data.added.terms} thuật ngữ.`
+        text: `Quét thành công! Đã thêm: ${data.added.characters} nhân vật mới, ${data.added.pronounMatrix} quy tắc xưng hô mới, ${data.added.terms} thuật ngữ.`
       });
     } catch (e) {
       setStatusMsg({ type: 'error', text: e.message });
@@ -149,23 +154,35 @@ export default function GlossaryManager({ project, onUpdateProject }) {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold text-white">Ma Trận Xưng Hô & Từ Điển Thông Minh</h3>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
-              Đảm bảo nhất quán 100%
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium flex items-center gap-1">
+              <span>●</span> Tự Động Học Khi Dịch: BẬT
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            Hệ thống sẽ tự động đưa các quy tắc xưng hô này vào từng chương dịch để ép Gemini tuân thủ tuyệt đối, không xảy ra hiện tượng nhảy xưng hô hay dịch lệch tên.
+            AI tự động đưa các quy tắc xưng hô này vào từng chương dịch. Khi dịch qua các chương tiếp theo, hệ thống sẽ <strong>tự động phát hiện và học thêm</strong> các nhân vật và cặp xưng hô mới.
           </p>
         </div>
 
-        <button
-          onClick={handleAutoScan}
-          disabled={scanning}
-          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition shrink-0"
-        >
-          <Sparkles className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
-          {scanning ? 'Đang phân tích...' : '⚡ AI Quét Tự Động Nhân Vật'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handleAutoScan('all')}
+            disabled={scanning}
+            className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition shrink-0 cursor-pointer"
+            title="Quét đa phân đoạn qua toàn bộ các chương để bắt trọn bộ nhân vật và ma trận xưng hô của cả truyện"
+          >
+            <Sparkles className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+            <span>{scanning ? 'Đang phân tích...' : '🌌 Quét Sâu Toàn Bộ Truyện'}</span>
+          </button>
+
+          <button
+            onClick={() => handleAutoScan('recent')}
+            disabled={scanning}
+            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium flex items-center gap-1.5 transition border border-slate-700 cursor-pointer"
+            title="Chỉ quét các chương gần nhất để bổ sung nhân vật mới"
+          >
+            <span>⚡ Quét Chương Gần Nhất</span>
+          </button>
+        </div>
       </div>
 
       {statusMsg && (

@@ -1201,9 +1201,28 @@ export async function onRequest(context) {
 
       let sample = body.sampleText || '';
       if (!sample) {
-        const { results: chaps } = await db.prepare("SELECT title, originalText FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC LIMIT 3").bind(projectId).all();
-        if (chaps && chaps.length > 0) {
-          sample = chaps.map(c => `${c.title}\n${c.originalText}`).join('\n\n');
+        const { results: allChaps } = await db.prepare(
+          "SELECT title, originalText, chapterIndex FROM chapters WHERE projectId = ? ORDER BY chapterIndex ASC"
+        ).bind(projectId).all();
+
+        if (allChaps && allChaps.length > 0) {
+          let chosenChaps = [];
+          if (allChaps.length <= 6) {
+            chosenChaps = allChaps;
+          } else if (body.scanMode === 'recent') {
+            chosenChaps = allChaps.slice(-6);
+          } else {
+            // Multi-point sampling across the entire novel (beginning, middle, and later chapters)
+            const step = Math.max(1, Math.floor(allChaps.length / 8));
+            chosenChaps.push(allChaps[0], allChaps[1]);
+            for (let idx = step; idx < allChaps.length - 2; idx += step) {
+              if (!chosenChaps.some(c => c.chapterIndex === allChaps[idx].chapterIndex)) {
+                chosenChaps.push(allChaps[idx]);
+              }
+            }
+            chosenChaps.push(allChaps[allChaps.length - 1]);
+          }
+          sample = chosenChaps.slice(0, 10).map(c => `${c.title}\n${(c.originalText || '').slice(0, 2500)}`).join('\n\n---\n\n');
         }
       }
 
@@ -1220,15 +1239,21 @@ export async function onRequest(context) {
 
       const mergedChars = [...existingChars];
       for (const c of extracted.characters) {
-        if (c.zh && !mergedChars.some(x => x.zh === c.zh)) {
+        if (c.zh && !mergedChars.some(x => x.zh === c.zh || (x.vi && c.vi && x.vi.toLowerCase() === c.vi.toLowerCase()))) {
           mergedChars.push({ id: crypto.randomUUID(), ...c });
         }
       }
 
       const mergedPronouns = [...existingPronouns];
       for (const p of extracted.pronounMatrix) {
-        if (p.speakerZh && p.listenerZh && !mergedPronouns.some(x => x.speakerZh === p.speakerZh && x.listenerZh === p.listenerZh)) {
-          mergedPronouns.push({ id: crypto.randomUUID(), ...p });
+        if (p.speakerZh && p.listenerZh) {
+          const exists = mergedPronouns.some(x =>
+            (x.speakerZh === p.speakerZh && x.listenerZh === p.listenerZh) ||
+            (x.speakerCallsSelf === p.speakerCallsSelf && x.speakerCallsListener === p.speakerCallsListener && x.speakerZh === p.speakerZh)
+          );
+          if (!exists) {
+            mergedPronouns.push({ id: crypto.randomUUID(), ...p });
+          }
         }
       }
 
@@ -1358,18 +1383,46 @@ export async function onRequest(context) {
       let terms = JSON.parse(project.terms || '[]');
       let pronounMatrix = JSON.parse(project.pronounMatrix || '[]');
 
-      // AUTO-SCAN IF EMPTY: If project has no characters or pronoun matrix yet, auto-extract from this chapter!
+      // CONTINUOUS LEARNING: Auto-discover new characters and pronoun pairs as story unfolds!
       let entitiesExtracted = false;
-      if (characters.length === 0 && pronounMatrix.length === 0 && chapter.originalText) {
+      const shouldDiscover = 
+        (characters.length === 0) || 
+        (characters.length < 20) || 
+        (Number(chapter.chapterIndex || 0) % 2 === 0);
+
+      if (shouldDiscover && chapter.originalText) {
         try {
-          const autoExtracted = await autoExtractEntities(keys, project.model || 'gemini-3.6-flash', chapter.originalText, project.genre);
-          if (autoExtracted.characters.length > 0 || autoExtracted.pronounMatrix.length > 0) {
-            characters = autoExtracted.characters.map(c => ({ id: crypto.randomUUID(), ...c }));
-            pronounMatrix = autoExtracted.pronounMatrix.map(p => ({ id: crypto.randomUUID(), ...p }));
-            terms = [
-              ...terms,
-              ...autoExtracted.terms.filter(t => !terms.some(x => x.zh === t.zh)).map(t => ({ id: crypto.randomUUID(), ...t }))
-            ];
+          const autoExtracted = await autoExtractEntities(keys, project.model || 'gemini-3.6-flash', chapter.originalText.slice(0, 6000), project.genre);
+          let hasNew = false;
+
+          for (const c of autoExtracted.characters) {
+            if (c.zh && !characters.some(x => x.zh === c.zh || (x.vi && c.vi && x.vi.toLowerCase() === c.vi.toLowerCase()))) {
+              characters.push({ id: crypto.randomUUID(), ...c });
+              hasNew = true;
+            }
+          }
+
+          for (const p of autoExtracted.pronounMatrix) {
+            if (p.speakerZh && p.listenerZh) {
+              const exists = pronounMatrix.some(x =>
+                (x.speakerZh === p.speakerZh && x.listenerZh === p.listenerZh) ||
+                (x.speakerCallsSelf === p.speakerCallsSelf && x.speakerCallsListener === p.speakerCallsListener && x.speakerZh === p.speakerZh)
+              );
+              if (!exists) {
+                pronounMatrix.push({ id: crypto.randomUUID(), ...p });
+                hasNew = true;
+              }
+            }
+          }
+
+          for (const t of autoExtracted.terms) {
+            if (t.zh && !terms.some(x => x.zh === t.zh)) {
+              terms.push({ id: crypto.randomUUID(), ...t });
+              hasNew = true;
+            }
+          }
+
+          if (hasNew) {
             const nowTime = new Date().toISOString();
             await db.prepare(`
               UPDATE projects
@@ -1379,7 +1432,7 @@ export async function onRequest(context) {
             entitiesExtracted = true;
           }
         } catch (e) {
-          console.warn('Auto extraction during translation warning:', e.message);
+          console.warn('Continuous learning during translation warning:', e.message);
         }
       }
 
