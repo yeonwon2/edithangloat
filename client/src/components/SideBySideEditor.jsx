@@ -147,11 +147,29 @@ export default function SideBySideEditor({ project, chapter, onBack, onUpdateCha
       setTranslatedText((data.chapter.translatedText || '').normalize('NFC'));
       setQaReport(data.qaReport);
       if (onUpdateChapter) onUpdateChapter(data.chapter);
-      alert('Đã tự động sửa sạch rác AI, đóng ngoặc kép thoại, mượt hóa cụm từ convert và chuẩn hóa dấu câu thành công!');
+      alert('Đã tự động sửa sạch rác AI, đóng ngoặc kép thoại, mượt hóa cụm từ convert, chuẩn hóa dấu câu và giãn cách đoạn chuẩn xuất bản!');
     } catch (e) {
       alert('Lỗi tự động sửa: ' + e.message);
     } finally {
       setAutoFixing(false);
+    }
+  };
+
+  // 1-Click Standardize Paragraph Spacing (Ensure each paragraph and dialogue is separated by \n\n)
+  const handleFormatSpacing = async () => {
+    if (!translatedText) return;
+    const lines = translatedText.split('\n').map(l => l.trim()).filter(Boolean);
+    const formatted = lines.join('\n\n');
+    setTranslatedText(formatted);
+    try {
+      await fetch(`/api/projects/${project.id}/chapters/${chapter.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ translatedText: formatted })
+      });
+      if (onUpdateChapter) onUpdateChapter({ ...chapter, translatedText: formatted });
+    } catch (e) {
+      console.warn('Lỗi lưu giãn dòng:', e);
     }
   };
 
@@ -605,10 +623,20 @@ export default function SideBySideEditor({ project, chapter, onBack, onUpdateCha
                 onClick={handleAutoFix}
                 disabled={autoFixing || !translatedText}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow shadow-indigo-600/30"
-                title="Tự động dọn rác AI, đóng ngoặc kép thoại, sửa cụm từ convert và chuẩn hóa dấu câu trong 2ms mà không tốn token"
+                title="Tự động dọn rác AI, đóng ngoặc kép thoại, sửa cụm từ convert, chuẩn hóa dấu câu và giãn cách đoạn"
               >
                 <Wrench className={`w-3.5 h-3.5 ${autoFixing ? 'animate-spin' : ''}`} />
                 <span>{autoFixing ? 'Đang sửa...' : '🛠️ Sửa Nhanh 1-Click'}</span>
+              </button>
+
+              {/* Format Paragraph Spacing Button */}
+              <button
+                onClick={handleFormatSpacing}
+                disabled={!translatedText}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border border-amber-500/30"
+                title="Tự động giãn dòng: mỗi đoạn văn & câu thoại cách nhau đúng 1 dòng trống chuẩn tiểu thuyết"
+              >
+                <span>¶ Giãn Đoạn Xuống Dòng</span>
               </button>
 
               {/* Critical Retranslate Button */}

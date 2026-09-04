@@ -7,24 +7,50 @@ function previewChapters(text, splitMode, customPattern) {
     const lines = text.trim().split('\n');
     return [{ title: lines[0].slice(0, 60) || 'Chương 1' }];
   }
-  let regex;
+
+  const runReg = (reg) => {
+    const titles = [];
+    let m;
+    while ((m = reg.exec(text)) !== null) {
+      titles.push({ title: m[1].trim() });
+    }
+    return titles;
+  };
+
   if (splitMode === 'custom' && customPattern.trim()) {
     const pat = customPattern.trim();
+    let reg;
     if (pat.includes('*')) {
-      const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两\\s]+');
-      regex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两０-９\\s]+');
+      reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
     } else {
       const escaped = pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      regex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
     }
-  } else {
-    regex = /(?:^|\n)[\s\u3000]*(【?\s*(?:第\s*[0-9一二三四五六七八九十百千万零两]+\s*[章回节卷集部]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap)\s*[0-9一二三四五六七八九十百千万零两]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:(?:\(|\[)?[0-9]{1,4}(?:\)|\]|\.|\、)\s*[^，。\n]{2,30}))\s*】?[^\n]*)/gi;
+    return runReg(reg);
   }
-  const titles = [];
-  let m;
-  while ((m = regex.exec(text)) !== null) {
-    titles.push({ title: m[1].trim() });
+
+  const primaryRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●【〔\[(（]?\s*[、.·\s]*\s*(?:第\s*[0-9一二三四五六七八九十百千万零两０-９]+\s*[章回节卷集部话篇折幕更]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap|Episode|Part)\s*[0-9一二三四五六七八九十百千万零两０-９]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:番外|尾声|大结局|后记|楔子|序章|终章)[0-9一二三四五六七八九十百千万零两０-９\s]*|(?:(?:\(|\[|【|（)?[0-9０-９]{1,5}(?:\)|\]|】|）|\.|\、|：|:|-|—|\/|\s)\s*[^，。\n]{1,60}))[^\n]*)/gi;
+  let titles = runReg(primaryRegex);
+
+  if (titles.length <= 2 && text.length > 15000) {
+    const jinjiangRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●]?\s*[0-9０-９一二三四五六七八九十百千万零两]+\s*[、.:：\-—/\s][^\n]{1,80})/gi;
+    const pass1 = runReg(jinjiangRegex);
+    if (pass1.length > titles.length) titles = pass1;
+
+    if (titles.length <= 2) {
+      const numTitleRegex = /(?:^|\n)[\s\u3000]*([0-9０-９]{1,4}\s+[^\n，。\s]{1,60}[^\n]*)/gi;
+      const pass2 = runReg(numTitleRegex);
+      if (pass2.length > titles.length) titles = pass2;
+    }
+
+    if (titles.length <= 2) {
+      const zhNumRegex = /(?:^|\n)[\s\u3000]*([一二三四五六七八九十百千万零两]+[、.:：\s][^\n]{1,60})/gi;
+      const pass3 = runReg(zhNumRegex);
+      if (pass3.length > titles.length) titles = pass3;
+    }
   }
+
   return titles;
 }
 
@@ -40,7 +66,7 @@ export default function ImportModal({ isOpen, onClose, project, onImportSuccess 
 
   if (!isOpen || !project) return null;
 
-  // If text file selected, read preview text
+  // If text file selected, read full file preview (up to 15MB)
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     setFile(f);
@@ -50,7 +76,11 @@ export default function ImportModal({ isOpen, onClose, project, onImportSuccess 
       reader.onload = (evt) => {
         setFilePreviewText(evt.target.result || '');
       };
-      reader.readAsText(f.slice(0, 300000)); // preview first 300KB
+      if (f.size <= 15 * 1024 * 1024) {
+        reader.readAsText(f);
+      } else {
+        reader.readAsText(f.slice(0, 1000000)); // preview first 1MB if huge
+      }
     }
   };
 

@@ -24,29 +24,59 @@ class TextSplitter {
       }];
     }
 
-    let chapterRegex;
+    const runRegex = (reg) => {
+      const list = [];
+      let m;
+      while ((m = reg.exec(text)) !== null) {
+        list.push({
+          title: m[1].trim(),
+          startIndex: m.index + (m[0].startsWith('\n') ? 1 : 0),
+          headerLength: m[0].length
+        });
+      }
+      return list;
+    };
+
+    let matches = [];
+
     if (options.customPattern && options.customPattern.trim()) {
       const pat = options.customPattern.trim();
+      let reg;
       if (pat.includes('*')) {
-        const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两\\s]+');
-        chapterRegex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+        const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两０-９\\s]+');
+        reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
       } else {
         const escaped = pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        chapterRegex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+        reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
       }
+      matches = runRegex(reg);
     } else {
-      chapterRegex = /(?:^|\n)[\s\u3000]*(【?\s*(?:第\s*[0-9一二三四五六七八九十百千万零两]+\s*[章回节卷集部]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap)\s*[0-9一二三四五六七八九十百千万零两]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:(?:\(|\[)?[0-9]{1,4}(?:\)|\]|\.|\、)\s*[^，。\n]{2,30}))\s*】?[^\n]*)/gi;
-    }
+      const primaryRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●【〔\[(（]?\s*[、.·\s]*\s*(?:第\s*[0-9一二三四五六七八九十百千万零两０-９]+\s*[章回节卷集部话篇折幕更]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap|Episode|Part)\s*[0-9一二三四五六七八九十百千万零两０-９]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:番外|尾声|大结局|后记|楔子|序章|终章)[0-9一二三四五六七八九十百千万零两０-９\s]*|(?:(?:\(|\[|【|（)?[0-9０-９]{1,5}(?:\)|\]|】|）|\.|\、|：|:|-|—|\/|\s)\s*[^，。\n]{1,60}))[^\n]*)/gi;
+      matches = runRegex(primaryRegex);
 
-    const matches = [];
-    let match;
+      if (matches.length <= 2 && text.length > 15000) {
+        const jinjiangRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●]?\s*[0-9０-９一二三四五六七八九十百千万零两]+\s*[、.:：\-—/\s][^\n]{1,80})/gi;
+        const pass1 = runRegex(jinjiangRegex);
+        if (pass1.length > matches.length) matches = pass1;
 
-    while ((match = chapterRegex.exec(text)) !== null) {
-      matches.push({
-        title: match[1].trim(),
-        startIndex: match.index + (match[0].startsWith('\n') ? 1 : 0),
-        headerLength: match[0].length
-      });
+        if (matches.length <= 2) {
+          const numTitleRegex = /(?:^|\n)[\s\u3000]*([0-9０-９]{1,4}\s+[^\n，。\s]{1,60}[^\n]*)/gi;
+          const pass2 = runRegex(numTitleRegex);
+          if (pass2.length > matches.length) matches = pass2;
+        }
+
+        if (matches.length <= 2) {
+          const zhNumRegex = /(?:^|\n)[\s\u3000]*([一二三四五六七八九十百千万零两]+[、.:：\s][^\n]{1,60})/gi;
+          const pass3 = runRegex(zhNumRegex);
+          if (pass3.length > matches.length) matches = pass3;
+        }
+
+        if (matches.length <= 2) {
+          const bracketRegex = /(?:^|\n)[\s\u3000]*([【〔\[(（][0-9０-９一二三四五六七八九十百千万零两\s]+[】〕\])）][^\n]{0,60})/gi;
+          const pass4 = runRegex(bracketRegex);
+          if (pass4.length > matches.length) matches = pass4;
+        }
+      }
     }
 
     // Fallback: If no chapter headers were detected:

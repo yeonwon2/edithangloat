@@ -208,6 +208,10 @@ function autoFixContent(text) {
   fixed = fixed.replace(/[^\S\r\n]{2,}/g, ' ');
   fixed = fixed.replace(/[^\S\r\n]+([,.\?!;:])/g, '$1');
 
+  // Standardize novel paragraph spacing: ensure every paragraph & dialogue has exactly 1 empty line break (\n\n)
+  const lines = fixed.split('\n').map(l => l.trim()).filter(Boolean);
+  fixed = lines.join('\n\n');
+
   return fixed.trim();
 }
 
@@ -338,34 +342,71 @@ function splitTextIntoChapters(rawText, { singleChapter = false, customPattern =
     }];
   }
 
-  let regex;
+  const runRegex = (reg) => {
+    const list = [];
+    let m;
+    while ((m = reg.exec(text)) !== null) {
+      list.push({
+        title: m[1].trim(),
+        startIndex: m.index + (m[0].startsWith('\n') ? 1 : 0),
+        headerLength: m[0].length
+      });
+    }
+    return list;
+  };
+
+  let matches = [];
+
   if (customPattern && customPattern.trim()) {
     const pat = customPattern.trim();
+    let reg;
     if (pat.includes('*')) {
-      const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两\\s]+');
-      regex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      const escaped = pat.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[0-9一二三四五六七八九十百千万零两０-９\\s]+');
+      reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
     } else {
       const escaped = pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      regex = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
+      reg = new RegExp(`(?:^|\\n)[\\s\\u3000]*(${escaped}[^\\n]*)`, 'gi');
     }
+    matches = runRegex(reg);
   } else {
     // Ultra-comprehensive auto pattern:
-    // 1) Chinese: 第 1 章, 第一章, 第001章, 第1节, 第1回, 第1卷, 第1集, 第1部
-    // 2) Vietnamese / English: Chương 1, Chương 01, Hồi 1, Tiết 1, Quyển 1, Tập 1, Chapter 1, Chap 1
-    // 3) Brackets: 【第1章 ...】, 【Chương 1 ...】, [Chapter 1 ...]
-    // 4) Numbering lines: 1. 问政, 1、问政, 01. 问政, (1) 问政
-    // 5) Delimiters: === Chương 1 ===, --- Chương 1 ---, *** Chương 1 ***
-    regex = /(?:^|\n)[\s\u3000]*(【?\s*(?:第\s*[0-9一二三四五六七八九十百千万零两]+\s*[章回节卷集部]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap)\s*[0-9一二三四五六七八九十百千万零两]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:(?:\(|\[)?[0-9]{1,4}(?:\)|\]|\.|\、)\s*[^，。\n]{2,30}))\s*】?[^\n]*)/gi;
-  }
+    // 1) Jinjiang & novel symbols: ☆、, ★、, ◇、, ◆、, ○、, 【, (, （, [, 〔, 《
+    // 2) Chinese keywords: 第...章, 第...回, 第...节, 第...卷, 第...集, 第...部, 第...话, 第...篇, 第...折, 第...幕, 第...更
+    // 3) Vietnamese/English keywords: Chương, Hồi, Tiết, Quyển, Tập, Chapter, Chap, Episode, Part
+    // 4) Special sections: 番外 (Ngoại truyện), 尾声, 大结局, 后记, 楔子, 序章, 终章
+    // 5) Numbering lines: 1. , 1、, 001 , 1: , 1 - , 1/179
+    // 6) Delimiters: ===, ---, ***, ###
+    const primaryRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●【〔\[(（]?\s*[、.·\s]*\s*(?:第\s*[0-9一二三四五六七八九十百千万零两０-９]+\s*[章回节卷集部话篇折幕更]|(?:Chương|Hồi|Tiết|Quyển|Tập|Chapter|Chap|Episode|Part)\s*[0-9一二三四五六七八九十百千万零两０-９]+|={3,}[^=\n]+={3,}|-{3,}[^-\n]+-{3,}|\*{3,}[^*\n]+\*{3,}|(?:番外|尾声|大结局|后记|楔子|序章|终章)[0-9一二三四五六七八九十百千万零两０-９\s]*|(?:(?:\(|\[|【|（)?[0-9０-９]{1,5}(?:\)|\]|】|）|\.|\、|：|:|-|—|\/|\s)\s*[^，。\n]{1,60}))[^\n]*)/gi;
+    matches = runRegex(primaryRegex);
 
-  const matches = [];
-  let m;
-  while ((m = regex.exec(text)) !== null) {
-    matches.push({
-      title: m[1].trim(),
-      startIndex: m.index + (m[0].startsWith('\n') ? 1 : 0),
-      headerLength: m[0].length
-    });
+    // Smart Multi-Pass Fallback: If primary regex matched <= 2 chapters on a large file (> 15KB)
+    if (matches.length <= 2 && text.length > 15000) {
+      // Pass 1: Jinjiang prefix symbol format (e.g. ☆、第1章, ☆、1, 1、)
+      const jinjiangRegex = /(?:^|\n)[\s\u3000]*([☆★◇◆○●]?\s*[0-9０-９一二三四五六七八九十百千万零两]+\s*[、.:：\-—/\s][^\n]{1,80})/gi;
+      const pass1 = runRegex(jinjiangRegex);
+      if (pass1.length > matches.length) matches = pass1;
+
+      // Pass 2: Leading 1-4 digit numbers followed by space and title (e.g. 001 揭榜, 1 揭榜)
+      if (matches.length <= 2) {
+        const numTitleRegex = /(?:^|\n)[\s\u3000]*([0-9０-９]{1,4}\s+[^\n，。\s]{1,60}[^\n]*)/gi;
+        const pass2 = runRegex(numTitleRegex);
+        if (pass2.length > matches.length) matches = pass2;
+      }
+
+      // Pass 3: Chinese characters numbers (e.g. 一、, 二、, 第一、)
+      if (matches.length <= 2) {
+        const zhNumRegex = /(?:^|\n)[\s\u3000]*([一二三四五六七八九十百千万零两]+[、.:：\s][^\n]{1,60})/gi;
+        const pass3 = runRegex(zhNumRegex);
+        if (pass3.length > matches.length) matches = pass3;
+      }
+
+      // Pass 4: Pure bracketed numbering (e.g. 【1】, (1), [1])
+      if (matches.length <= 2) {
+        const bracketRegex = /(?:^|\n)[\s\u3000]*([【〔\[(（][0-9０-９一二三四五六七八九十百千万零两\s]+[】〕\])）][^\n]{0,60})/gi;
+        const pass4 = runRegex(bracketRegex);
+        if (pass4.length > matches.length) matches = pass4;
+      }
+    }
   }
 
   if (matches.length === 0) {
