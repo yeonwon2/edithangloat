@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Production build artifacts
+client/dist/
+dist/
+
+# Sensitive user credentials
+data/config.json
+.env
+.env.local
+.env.*.local
+
+# Cloudflare Wrangler cache
+.wrangler/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

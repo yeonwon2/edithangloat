@@ -1,0 +1,394 @@
+[
+  {
+    "id": "beeee909-e710-43d5-b188-c4955e839791",
+    "title": "Đấu Phá Khung Thương (Mẫu)",
+    "genre": "Đô Thị / Trọng Sinh",
+    "toneGuidance": "Bạn là một dịch giả tiểu thuyết mạng chuyên nghiệp, dịch từ tiếng Trung sang tiếng Việt.\n\nTHỂ LOẠI: Bách hợp\nBỐI CẢNH: Đô thị hiện đại\nĐây là bối cảnh hiện đại: dùng xưng hô và từ ngữ đời thường hiện đại (anh/em/tôi/bạn/cậu...), tránh dùng từ Hán Việt cổ trang không cần thiết.\n\nĐẶC THÙ THỂ LOẠI:\n\n- Đây là thể loại ABO (Alpha/Beta/Omega): giữ nguyên các danh xưng Alpha/Beta/Omega, không dịch nghĩa. Dịch/biên tập chính xác và nhất quán các khái niệm đặc trưng: pheromone → tin tức tố, heat → kỳ phát tình (Omega), rut → kỳ phát tình (Alpha), mating/bond/mark → đánh dấu, nest → tổ, suppressant → thuốc ức chế.\n\nYÊU CẦU KHI DỊCH:\n\n- Thịnh Thanh Sơn dẫn truyện gọi là cô, Thịnh Vân Thư dẫn truyện gọi là nàng\n\n- Xưng hô: xưng nhau là chị - em\n- Giữ nguyên số đoạn và cách xuống dòng như bản gốc, không gộp/tách đoạn.\n- Không thêm lời dẫn, ghi chú, giải thích hay bình luận nào ở đầu/cuối — chỉ trả về đúng phần bản dịch.\n- Dịch đầy đủ 100% nội dung, không tóm tắt, không bỏ sót câu nào.\n- Dùng nhất quán một cách chuyển ngữ cho mỗi tên riêng/địa danh trong suốt đoạn văn.\n- Văn phong tiếng Việt tự nhiên, mượt mà như tiểu thuyết mạng, không dịch kiểu word-by-word máy móc.\nHãy dịch đoạn văn bản dưới đây sang tiếng Việt theo đúng các yêu cầu trên. Chỉ trả về bản dịch, không thêm gì khác:\n\n",
+    "model": "gemini-3.5-flash-lite",
+    "characters": [
+      {
+        "id": "char_khe",
+        "zh": "纪溪",
+        "vi": "Kỷ Khê",
+        "gender": "Nữ",
+        "narrativePronoun": "cô",
+        "role": "Alpha, tổng tài",
+        "notes": "Dẫn truyện luôn gọi là 'cô'"
+      },
+      {
+        "id": "char_nac",
+        "zh": "程诺",
+        "vi": "Trình Nặc",
+        "gender": "Nữ",
+        "narrativePronoun": "nàng",
+        "role": "Omega, người yêu cũ",
+        "notes": "Dẫn truyện luôn gọi là 'nàng'"
+      },
+      {
+        "id": "char_son",
+        "zh": "盛清山",
+        "vi": "Thịnh Thanh Sơn",
+        "gender": "Nữ",
+        "narrativePronoun": "cô",
+        "role": "Nhân vật chính",
+        "notes": "Dẫn truyện gọi là 'cô'"
+      },
+      {
+        "id": "char_thu",
+        "zh": "盛云舒",
+        "vi": "Thịnh Vân Thư",
+        "gender": "Nữ",
+        "narrativePronoun": "nàng",
+        "role": "Nhân vật chính",
+        "notes": "Dẫn truyện gọi là 'nàng'"
+      },
+      {
+        "id": "char_ngon",
+        "zh": "陆泽言",
+        "vi": "Lục Trạch Ngôn",
+        "gender": "Nữ",
+        "narrativePronoun": "cô",
+        "role": "Thư ký của Kỷ Khê",
+        "notes": "Thư ký đắc lực"
+      },
+      {
+        "id": "char_1788445999731_gjvf",
+        "zh": "灵风",
+        "vi": "Linh Phong",
+        "gender": "Không rõ",
+        "role": "Nhân vật/trợ lý (hoặc thú cưng) dẫn đường",
+        "notes": "Phát hiện từ Phần 1",
+        "narrativePronoun": "nó"
+      },
+      {
+        "id": "char_1788445999731_30gl",
+        "zh": "03",
+        "vi": "03",
+        "gender": "Không rõ",
+        "role": "Đối tượng so sánh xúc giác (có thể là AI hoặc robot)",
+        "notes": "Phát hiện từ Phần 1",
+        "narrativePronoun": "nó"
+      },
+      {
+        "id": "char_1788446983001_1ves",
+        "zh": "苏盛",
+        "vi": "Tô Thịnh",
+        "gender": "Nam/Nữ",
+        "role": "Thư ký của Trình Nặc (chỉ nhắc đến tên)",
+        "notes": "Phát hiện từ “什么？”"
+      }
+    ],
+    "pronounMatrix": [
+      {
+        "id": "prn_khe_nac",
+        "speakerZh": "程诺",
+        "listenerZh": "纪溪",
+        "speakerCallsSelf": "em",
+        "speakerCallsListener": "chị / tỷ tỷ",
+        "notes": "Thân mật, làm nũng"
+      },
+      {
+        "id": "prn_nac_khe",
+        "speakerZh": "纪溪",
+        "listenerZh": "程诺",
+        "speakerCallsSelf": "tôi / chị",
+        "speakerCallsListener": "em / cô",
+        "notes": "Kiềm chế, ngoài lạnh trong nóng"
+      },
+      {
+        "id": "prn_son_thu",
+        "speakerZh": "盛清山",
+        "listenerZh": "盛云舒",
+        "speakerCallsSelf": "chị",
+        "speakerCallsListener": "em",
+        "notes": "Xưng hô chị em"
+      },
+      {
+        "id": "prn_thu_son",
+        "speakerZh": "盛云舒",
+        "listenerZh": "盛清山",
+        "speakerCallsSelf": "em",
+        "speakerCallsListener": "chị",
+        "notes": "Xưng hô chị em"
+      },
+      {
+        "id": "prn_1788445602701_7osh",
+        "speakerZh": "Trình Nặc",
+        "listenerZh": "Kỷ Khê",
+        "speakerCallsSelf": "Em",
+        "speakerCallsListener": "Chị",
+        "notes": "thân mật"
+      },
+      {
+        "id": "prn_1788445602701_8pas",
+        "speakerZh": "Kỷ Khê",
+        "listenerZh": "Trình Nặc",
+        "speakerCallsSelf": "Chị",
+        "speakerCallsListener": "Em / Bảo bối",
+        "notes": "thân mật, chiều chuộng"
+      },
+      {
+        "id": "prn_1788445602701_mjow",
+        "speakerZh": "Linh Phong",
+        "listenerZh": "Kỷ Khê",
+        "speakerCallsSelf": "Em (dịch giả dùng linh hoạt)",
+        "speakerCallsListener": "Cô",
+        "notes": "lịch sự"
+      },
+      {
+        "id": "prn_1788445602701_fl5p",
+        "speakerZh": "Kỷ Khê",
+        "listenerZh": "Linh Phong",
+        "speakerCallsSelf": "Chị",
+        "speakerCallsListener": "Em",
+        "notes": "thân thiết"
+      }
+    ],
+    "terms": [
+      {
+        "id": "t1",
+        "zh": "斗之力",
+        "vi": "Đấu Chi Lực",
+        "category": "Cảnh giới"
+      },
+      {
+        "id": "t2",
+        "zh": "测验魔石碑",
+        "vi": "Ma Thạch Bia Trắc Nghiệm",
+        "category": "Pháp bảo"
+      }
+    ],
+    "chapters": [
+      {
+        "id": "cf9a4866-ff7e-4a12-a61a-54fd0a5b303a",
+        "index": 1,
+        "title": "Phần 1",
+        "originalText": "顺着alpha的目光摸向脸颊，不正常的温度让程诺心跳加速，雪肤映衬着红霞，乌黑透亮的眼睛流露出羞涩与欢喜，她嘴硬辩解道：\n\n“我刚洗完澡，是被热气熏红的。”\n\n“那我来的真巧。”\n\n女人暧昧的低笑声在卧室回荡，像根羽毛轻轻拂过程诺的心尖，耳垂鲜红欲滴。\n\n忽然，程诺像是想起什么，直接挂断了通讯，没给纪溪反应的机会。\n\n光幕消失，纪溪跟面前的灵风四目相对。\n\n随即迅速一脚踏进家门。\n\n免得被赶出去。\n\n在灵风的带领下，纪溪朝着楼上走去，她的视线环顾四周，布局陈设都是房屋自带的，很难从中找出程诺生活过的痕迹。\n\n与其说是家，这里更像是短暂停留的酒店。\n\n灵风停在卧室门前，小狗脑袋朝她点点，“这是主人的房间。”\n\n“好，谢谢你。”\n\n纪溪捏了捏她的耳朵，软乎乎的，手感和03有得一拼。\n\n灵风转身下楼。\n\n纪溪站在门前轻呼一口气，抬起的手刚要落下房门从里面打开了。\n\n穿着睡裙的omega赤脚站在地板上，长发随意披散在肩头，走廊上暖黄的灯光越过纪溪倾洒在她的周身，清丽的眉眼比平时更添几分柔美，淡色的唇瓣上残留着未尽的水痕，令人垂涎。\n\n纪溪抿着唇，上前一步将她抱起，“怎么不穿鞋？”凑近时纪溪闻到一股苦涩的味道，和她的信息素很像，但其中夹杂着一丝难以辨别的涩味。\n\n程诺抬起胳膊搭在她的肩上，眼睛转而看向她，“你什么都没带吗？”\n\n纪溪动作轻柔地把人放到床上，弯下腰，鼻尖几乎贴上她的，“我洗过澡了，不信，你闻闻看……”\n\n意图不轨的红唇被手指抵住，纪溪眼睛微微放大，握住她的手，“怎么了？”\n\n程诺随意地挣了一下，视线落到她身上，“那你晚上睡觉穿什么？”\n\n“不穿啊，我们睡在一起的时候，睡衣大部分时间不都在地上吗？”\n\n纪溪亲吻着她的指尖，语气越发露骨。\n\n指尖微蜷，程诺垂下眼帘，乌发自两侧滑落露出白皙的脖颈，“所以你来找我只为了这种事吗？”\n\n嗓音低沉发闷，裹挟着尚未言明的失落，让纪溪心里冒起酸意。\n\n纪溪收起轻浮的姿态，双手捧起程诺的脸颊，指腹划过薄红的眼尾，看向她的眼神变得认真而温柔，\n\n“我想你，所以来找你；见到你，又想和你亲近。我不否认我对你的渴望，但是你不能颠倒因果啊，宝宝。”\n\n言罢，纪溪低头在她唇角落下一吻。\n\n这一次程诺没有躲开。\n\n握住她的手腕，程诺眼睫轻颤，黑眸中的委屈和一丝不安被纪溪轻轻抚平，但她还是抿着唇，语气生硬，\n\n“那你为什么两天没有联系我？一条消息都没有。”\n\n凤眸掠过一道寒光，纪溪敛去眼中异色，手指摩挲着她的脸颊，轻笑道：“家里出了点事，我可是一忙完就来找你了，这还不够诚心吗？”\n\n说着纪溪就要爬上床，但却被程诺推开。\n\n纪溪一时不防，后退两步才稳住身形，惊讶地看着她。\n\n程诺直接掀开被子钻进去，态度坏坏的，“不许穿外衣上床，脏死了！”\n\n纪溪摸向拉链，“那我脱？”\n\n程诺瞪了她一眼，耳朵通红，“自己去找件合适的睡衣穿，不然你今晚就睡客房！”\n\n纪溪“啊”一声，“穿内衣都不行吗？这么霸道？”\n\n“这是我家，你得听我的！”\n\n回旋镖扎到身上，纪溪举起双手投降，“好好好，我穿还不行嘛~”\n\n纪溪摇着头，嘟嘟囔囔地去翻程诺的衣柜，从一堆睡衣里找出一套米白色的睡袍，穿好后纪溪回到房间，在床边转了个圈，\n\n“这样行不行啊？”\n\n程诺瞥见露在外面的修长小腿，抓着被子的手一紧，躺下来背对着她，“嗯。”\n\n唇角勾起一抹宠溺又无奈的笑，纪溪走到另一侧，掀开被子上床。\n\n在她躺在的瞬间，程诺闭上眼睛。\n\n卧室里只剩下床顶壁灯，柔和的光线勾勒出女人姣好的容颜，也将空气中那股微妙的寂静慢慢放大。\n\n纪溪没有贸然靠近，目光描绘着程诺肩颈线条，以及几缕散落在胸前的乌发。\n\n过了一会，纪溪才轻声开口，声音在安静的夜晚格外清晰，“真的生气了？家里的事情有些棘手，牵扯很多，我不想把那些烦心事带给你，不是故意不理你的……”\n\n纪溪试探性地伸手想要把人抱进怀里，但却被程诺推开。\n\n眼皮动了动，程诺缓缓睁开双眼，眼眶有些湿润。\n\n一根手指抵在纪溪心口不轻不重地戳着，程诺哑着声说，\n\n“那天你好凶，不听我解释，还在打电话的时候那样……做完了就走，不理我，特别特别坏，我不喜欢那样……第二天还让03把我赶走，拉黑，让我永远不要回来……”\n\n纪溪心脏揪起，眼神露出歉意和心疼，“对不起，那次是我太冲动了，没有顾及你的感受，我保证不会再有下次，别哭了宝宝……”\n\n“不许摸我！”\n\n眼泪沾湿枕巾，程诺红着眼躲开她的手，继续抱怨：\n\n“你连我的秘书都能收买，我去做什么你都知道，那你不知道你不理我的时候我有多难过吗……你总是让我不要哭，可明明是你把我惹哭的，我一点也不想哭……”\n\nomega哭起来的时候是无声的，豆大的泪珠挤出眼眶滚进发间，只剩下一双泛红朦胧的泪眼委屈地看着纪溪。\n\n每次被她这样瞧着，纪溪觉得自己的心被程诺揉得又酸又软，不知如何是好。\n\n“我没有收买你的秘书，你回家的消息是她主动告诉泽言的。我……我没有想到你会这么难过，我以为你只是，只是……”\n\n程诺看到她闪躲的目光，拳头一下接着一下落在她身上，声音嘶哑，“我只是想依附你？没有你我也能去找别人，无论是应清和还是别的alpha，只要她们有权有势，我就能巴结她们，甚至跟她们上床是不是？！”\n\n“没有！”纪溪握住她的拳头，不顾她的挣扎强硬地抱住她，吻去她眼角的泪，纪溪的声音极低，“我以为你和八年前一样，只是把我当做备选，有更好的选择出现就会抛弃我……是我不够好，不能让你坚定地留在我身边，我不怪你。”",
+        "translatedTitle": "Phần 1",
+        "translatedText": "Thuận theo ánh mắt của Alpha mà sờ lên gò má, nhiệt độ bất thường khiến tim Trình Nặc đập loạn nhịp, làn da trắng nõn phản chiếu ráng hồng, đôi mắt đen nhánh trong veo lộ ra vẻ thẹn thùng cùng vui mừng, nàng bướng bỉnh ngụy biện:\n\n\"Em mới vừa tắm xong, là bị hơi nóng làm cho đỏ đấy.\"\n\n\"Vậy thì chị đến rất đúng lúc.\"\n\nTiếng cười thấp mờ ám của người phụ nữ vang vọng trong phòng ngủ, như một chiếc lông vũ nhẹ nhàng lướt qua tim Trình Nặc, vành tai đỏ rực muốn nhỏ máu.\n\nĐột nhiên, Trình Nặc như nhớ ra cái gì, trực tiếp cúp máy, không cho Kỷ Khê cơ hội phản ứng.\n\nMàn hình quang bích biến mất, Kỷ Khê trừng mắt nhìn Linh Phong đối diện.\n\nNgay sau đó nhanh chóng bước một chân vào cửa nhà.\n\nTránh cho việc bị đuổi ra ngoài.\n\nDưới sự dẫn đường của Linh Phong, Kỷ Khê bước lên lầu, ánh mắt cô đảo quanh bốn phía, bố cục và bài trí đều là đồ có sẵn trong nhà, rất khó để tìm ra dấu vết cuộc sống của Trình Nặc từ trong đó.\n\nNói đây là nhà, chi bằng nói nó giống một khách sạn để dừng chân ngắn hạn thì hơn.\n\nLinh Phong dừng lại trước cửa phòng ngủ, cái đầu cún con gật gật với cô, \"Đây là phòng của chủ nhân.\"\n\n\"Được, cảm ơn em.\"\n\nKỷ Khê véo véo tai nó, mềm mại nhũn nhão, cảm giác xúc giác một chín một mười với 03.\n\nLinh Phong quay người đi xuống lầu.\n\nKỷ Khê đứng trước cửa khẽ thở ra một hơi, bàn tay vừa giơ lên định hạ xuống thì cửa phòng đã được mở ra từ bên trong.\n\nOmega mặc váy ngủ đi chân trần trên sàn nhà, mái tóc dài tùy ý buông xõa trên vai, ánh đèn vàng ấm áp ngoài hành lang chiếu qua người Kỷ Khê phủ lên toàn thân nàng, đôi mày thanh tú càng thêm vài phần dịu dàng mềm mại so với ngày thường, trên đôi môi nhạt màu vẫn còn vương lại vết nước chưa khô, khiến người ta thèm thuồng.\n\nKỷ Khê mím môi, bước lên một bước bế xốc nàng lên, \"Sao lại không đi giày?\" Lúc áp sát lại gần, Kỷ Khê ngửi thấy một mùi vị cay đắng, rất giống tin tức tố của cô, nhưng trong đó lại lẫn lộn một chút vị chát khó mà nhận biết.\n\nTrình Nặc nâng cánh tay vòng qua vai cô, đôi mắt chuyển sang nhìn cô, \"Em chẳng mang theo gì à?\"\n\nĐộng tác của Kỷ Khê rất dịu dàng đặt người lên giường, cúi người xuống, chóp mũi hầu như sắp dán sát vào mũi nàng, \"Chị tắm rửa rồi, không tin thì em ngửi thử xem...\"\n\nĐôi môi đỏ có ý đồ xấu bị ngón tay chặn lại, mắt Kỷ Khê hơi mở to, nắm lấy tay nàng, \"Sao thế?\"\n\nTrình Nặc hờ hững giãy giụa một chút, ánh mắt rơi trên người cô, \"Vậy tối nay chị ngủ mặc gì?\"\n\n\"Không mặc chứ sao, lúc chúng ta ngủ cùng nhau, chẳng phải đồ ngủ phần lớn thời gian đều ở dưới đất sao?\"\n\nKỷ Khê hôn lên đầu ngón tay nàng, giọng điệu ngày càng lộ liễu.\n\nĐầu ngón tay hơi co lại, Trình Nặc rủ mi mắt, mái tóc đen buông xõa từ hai bên để lộ chiếc cổ trắng ngần, \"Cho nên chị đến tìm em chỉ vì loại chuyện này thôi sao?\"\n\nGiọng nói trầm đục, mang theo chút thất vọng chưa thành lời, khiến trong lòng Kỷ Khê dâng lên vị chua xót.\n\nKỷ Khê thu lại vẻ cà lơ phất phơ, hai tay nâng gò má Trình Nặc lên, đầu ngón tay lướt qua khóe mắt ửng đỏ, ánh mắt nhìn nàng trở nên nghiêm túc và dịu dàng,\n\n\"Chị nhớ em, cho nên mới đến tìm em; nhìn thấy em, lại muốn được thân mật với em. Chị không phủ nhận sự khao khát của mình đối với em, nhưng em không thể đảo lộn nhân quả được chứ, bảo bối.\"\n\nNói xong, Kỷ Khê cúi đầu đặt một nụ hôn lên khóe môi nàng.\n\nLần này Trình Nặc không né tránh.\n\nNắm lấy cổ tay cô, hàng mi Trình Nặc khẽ run rẩy, sự ấm ức và chút bất an trong đôi mắt đen láy đã được Kỷ Khê nhẹ nhàng xoa dịu, nhưng nàng vẫn mím môi, giọng điệu cứng ngắc,\n\n\"Vậy tại sao hai ngày nay chị không liên lạc với em? Một tin nhắn cũng không có.\"\n\nĐôi mắt phượng lướt qua một tia hàn quang, Kỷ Khê thu lại vẻ khác thường trong mắt, ngón tay mơn trớn gò má nàng, cười nhẹ bảo: \"Trong nhà có chút chuyện xảy ra, chị vừa bận xong là đã đến tìm em ngay đây thôi, như vậy còn chưa đủ thành ý sao?\"\n\nNói xong Kỷ Khê liền định trèo lên giường, nhưng lại bị Trình Nặc đẩy ra.\n\nKỷ Khê nhất thời không phòng bị, lùi lại hai bước mới đứng vững được, kinh ngạc nhìn nàng.\n\nTrình Nặc trực tiếp xốc chăn chui vào, thái độ vô cùng khó chịu, \"Không cho phép mặc áo khoác lên giường, bẩn chết đi được!\"\n\nKỷ Khê sờ lên dây kéo, \"Vậy chị cởi ra nhé?\"\n\nTrình Nặc trừng mắt lườm cô một cái, đôi tai đỏ bừng, \"Tự đi tìm một bộ đồ ngủ thích hợp mà mặc vào, bằng không tối nay chị cứ ngủ phòng khách cho em!\"\n\nKỷ Khê \"A\" một tiếng, \"Mặc đồ lót cũng không được sao? Bá đạo thế cơ à?\"\n\n\"Đây là nhà em, chị phải nghe lời em!\"\n\nGậy ông đập lưng ông, Kỷ Khê giơ hai tay đầu hàng, \"Được được được, chị mặc là được chứ gì~\"\n\nKỷ Khê lắc đầu, lầm bầm lầm bầm đi lục tủ quần áo của Trình Nặc, tìm từ trong đống đồ ngủ ra một bộ áo ngủ màu trắng gạo, mặc xong xuôi Kỷ Khê quay lại phòng, xoay một vòng bên mép giường,\n\n\"Thế này được chưa nào?\"\n\nTrình Nặc liếc thấy đôi chân thon dài lộ ra bên ngoài, bàn tay đang nắm chặt chăn siết lại, nằm xuống quay lưng về phía nàng, \"Ừ.\"\n\nKhóe môi cong lên một nụ cười vừa cưng chiều lại vừa bất đắc dĩ, Kỷ Khê đi vòng qua phía bên kia, xốc chăn lên giường.\n\nVào khoảnh khắc cô nằm xuống, Trình Nặc nhắm mắt lại.\n\nTrong phòng ngủ chỉ còn lại chiếc đèn ốp trên đỉnh giường, ánh sáng dịu dàng phác họa nên dung nhan xinh đẹp của người phụ nữ, cũng từ từ phóng đại sự tĩnh mịch vi diệu trong không gian.\n\nKỷ Khê không dám mạo muội tiến lại gần, ánh mắt miêu tả đường nét vai cổ của Trình Nặc, cùng với vài lọn tóc đen vương vãi trước ngực.\n\nMột lát sau, Kỷ Khê mới khẽ cất lời, giọng nói trong đêm tối yên tĩnh đặc biệt rõ ràng, \"Thật sự giận rồi sao? Chuyện trong nhà có chút gai góc, liên lụy rất nhiều, chị không muốn mang những chuyện phiền muộn đó đến cho em, không phải cố ý phớt lờ em đâu...\"\n\nKỷ Khê mang theo thăm dò vươn tay muốn ôm người vào ngực, nhưng lại bị Trình Nặc đẩy ra.\n\nMí mắt động đậy, Trình Nặc chậm rãi mở hai mắt ra, hốc mắt hơi ẩm ướt.\n\nMột ngón tay đè lên ngực Kỷ Khê chọc nhẹ không nặng không nhẹ, Trình Nặc khàn giọng nói,\n\n\"Hôm đó chị dữ lắm, không nghe em giải thích, còn lúc gọi điện thoại lại làm thế... Làm xong thì bỏ đi, không thèm để ý đến em, cực kỳ cực kỳ xấu tính, em không thích như thế đâu... Ngày hôm sau còn bảo 03 đuổi em đi, chặn liên lạc, bắt em không bao giờ được quay lại nữa...\"\n\nTim Kỷ Khê thắt lại, ánh mắt lộ ra vẻ áy náy và xót xa, \"Xin lỗi em, lần đó là do chị quá xúc động, không màng tới cảm nhận của em, chị hứa sẽ không có lần sau nữa, đừng khóc mà bảo bối...\"\n\n\"Không cho phép sờ em!\"\n\nNước mắt làm ướt vỏ gối, Trình Nặc đỏ hoe mắt né tránh bàn tay cô, tiếp tục oán trách:\n\n\"Chị thậm chí còn mua chuộc được cả thư ký của em, em đi làm gì chị đều biết hết, thế mà chị lại không biết lúc chị phớt lờ em, em đau lòng cỡ nào sao... Chị lúc nào cũng bảo em đừng khóc, nhưng rõ ràng là chị chọc em khóc trước mà, em chẳng muốn khóc chút nào cả...\"\n\nOmega lúc khóc là không phát ra tiếng, những giọt nước mắt to bằng hạt đậu tràn khỏi khóe mi lăn vào kẽ tóc, chỉ còn lại một đôi mắt đỏ hoe mờ sương tủi thân nhìn Kỷ Khê.\n\nMỗi lần bị nàng nhìn bằng ánh mắt này, Kỷ Khê lại cảm thấy trái tim mình bị Trình Nặc nhào nặn đến vừa chua xót vừa mềm mại, không biết phải làm sao cho phải.\n\n\"Chị không mua chuộc thư ký của em đâu, chuyện em về nhà là cô ấy chủ động báo cho Trạch Ngôn biết. Chị... chị không ngờ em lại đau lòng như vậy, chị tưởng em chỉ là, chỉ là...\"\n\nTrình Nặc nhìn thấy ánh mắt né tránh của cô, từng quyền từng quyền nện lên người cô, giọng nghẹn ngào,\n\n\"Em chỉ muốn bám víu vào chị thôi sao? Không có chị em vẫn có thể đi tìm người khác, dù là Ứng Thanh Hòa hay Alpha nào khác, chỉ cần bọn họ có quyền có thế, là em có thể bợ đỡ bọn họ, thậm chí lên giường với bọn họ luôn phải không?!\"\n\n\"Không có!\" Kỷ Khê nắm lấy đôi tay đang giáng xuống của nàng, mặc kệ sự giãy giụa của nàng mà mạnh mẽ ôm chầm lấy, hôn đi những giọt nước mắt ở khóe mi nàng, giọng Kỷ Khê cực kỳ thấp,\n\n\"Chị tưởng em cũng giống như tám năm trước, chỉ coi chị là phương án dự phòng, hễ có lựa chọn tốt hơn xuất hiện là sẽ vứt bỏ chị... Là do chị chưa đủ tốt, không thể khiến em kiên định ở lại bên cạnh chị, chị không trách em.\"",
+        "status": "completed",
+        "wordCount": 2053,
+        "issues": [
+          "CẢNH BÁO NUỐT CHỮ: Bản Raw có 2253 ký tự nhưng bản dịch chỉ có 14 từ (thiếu >60% nội dung). AI đã tóm tắt hoặc bỏ dở chương!"
+        ],
+        "summary": "Trình Nặc thẹn thùng cúp máy video với Kỷ Khê sau khi bị trêu chọc, trong khi Kỷ Khê nhanh chóng tìm đến tận nơi ở tạm của nàng. Cả hai gặp nhau tại phòng ngủ, trải qua những giây phút thân mật và Kỷ Khê đã dịu dàng dỗ dành, giải thích nỗi nhớ của mình với Trình Nặc.",
+        "chineseCharCount": 0,
+        "pronounAudit": {
+          "charactersDetected": [
+            {
+              "zh": "程诺",
+              "vi": "Trình Nặc",
+              "gender": "Nữ",
+              "role": "Omega, chủ nhân ngôi nhà"
+            },
+            {
+              "zh": "纪奚",
+              "vi": "Kỷ Khê",
+              "gender": "Nữ",
+              "role": "Alpha, người đến tìm Trình Nặc"
+            },
+            {
+              "zh": "灵风",
+              "vi": "Linh Phong",
+              "gender": "Không rõ",
+              "role": "Nhân vật/trợ lý (hoặc thú cưng) dẫn đường"
+            },
+            {
+              "zh": "03",
+              "vi": "03",
+              "gender": "Không rõ",
+              "role": "Đối tượng so sánh xúc giác (có thể là AI hoặc robot)"
+            }
+          ],
+          "pronounPairs": [
+            {
+              "speaker": "Trình Nặc",
+              "listener": "Kỷ Khê",
+              "speakerSelf": "Em",
+              "speakerCallsOther": "Chị",
+              "tone": "thân mật/hờn dỗi"
+            },
+            {
+              "speaker": "Kỷ Khê",
+              "listener": "Trình Nặc",
+              "speakerSelf": "Chị",
+              "speakerCallsOther": "Em / Bảo bối",
+              "tone": "thân mật/sủng nịnh"
+            },
+            {
+              "speaker": "Linh Phong",
+              "listener": "Kỷ Khê",
+              "speakerSelf": "Em (được suy từ ngữ cảnh)",
+              "speakerCallsOther": "Cô",
+              "tone": "lịch sự"
+            },
+            {
+              "speaker": "Kỷ Khê",
+              "listener": "Linh Phong",
+              "speakerSelf": "Chị",
+              "speakerCallsOther": "Em",
+              "tone": "thân thiện"
+            }
+          ],
+          "consistencyNotes": "Nhất quán 100%"
+        },
+        "qaReport": {
+          "score": 88,
+          "status": "warning",
+          "recommendation": "proofread_needed",
+          "recommendationText": "Khuyên bấm nút \"⚡ Sửa Chuẩn Xưng Hô\" để AI đồng nhất lại xưng hô nhân vật theo ma trận.",
+          "issues": [
+            {
+              "id": "iss_prn_1788493253052_Trình Nặc",
+              "type": "pronoun",
+              "severity": "warning",
+              "message": "Nhân vật nữ Trình Nặc (quy định dẫn truyện là \"nàng\") có đoạn bị nhầm gọi thành \"hắn\".",
+              "targetSnippet": "Đột nhiên, Trình Nặc như nhớ ra cái gì, trực tiếp cúp máy, không cho Kỷ Khê cơ hội phản ứng",
+              "instruction": "Đổi ngôi xưng/dẫn truyện của nhân vật Trình Nặc thành \"nàng\", tuyệt đối không dùng \"hắn\" hay \"y\" trong câu này: \"Đột nhiên, Trình Nặc như nhớ ra cái gì, trực tiếp cúp máy, không cho Kỷ Khê cơ hội phản ứng\"",
+              "actionType": "ai_fix",
+              "fixable": true,
+              "recommendProofread": true
+            }
+          ],
+          "stats": {
+            "viWordCount": 1769,
+            "rawCharCount": 2253,
+            "lengthRatio": 1.12,
+            "chineseCharCount": 0,
+            "aiMetaCount": 0,
+            "convertArtifactCount": 0,
+            "quoteBalanced": true
+          }
+        }
+      },
+      {
+        "id": "dff2b6fc-b21e-4283-9ca0-66a04e30be5e",
+        "index": 2,
+        "title": "Phần 2",
+        "originalText": "程诺眼泪流得更凶了，她紧紧抱住纪溪，肩膀微微颤抖，“你从来都不是备选……我要的一直都是你。当年我选择离开，是因为我配不上你，我没有资格站在你身边，应清和是唯一一个朝我伸出手的。我是在签完合同之后才知道，她和你的关系……如果我知道你那么恨她，我不会……我不会！”\n\n程诺把脸埋进她的颈窝，泪水瞬间浸湿一小块肌肤，\n\n“纪溪，我不想当成金丝雀被你养在身边，我不要……我想站在你身边，我想让所有人都知道你是我的妻子。我知道我很贪心，但我就是想占有你的全部。”\n\n纪溪收紧手臂，下巴轻轻蹭着程诺的发顶，一遍遍低语，“我知道了我知道了，以后我们都不提了好吗？你一点也不贪心，我只希望你再大胆一点，什么都向我索取。”\n\n她捧起程诺泪痕交错的脸，动情又珍重的亲吻着她，程诺闭上眼回应她，两人的唇间浸润着苦涩的味道。\n\n当alpha的手顺着腰椎滑向下方时，程诺忽然握住她的手腕，红通通的眼睛瞪着她，“不许摸我！今晚我不想做，明晚也不想！在我开口之前，不许你碰我！”\n\n纪溪的动作僵住，眼底一闪过的错愕和难以掩饰的欲望，但她看着omega湿漉漉的眼睛以及其中未消的怨气，深吸一口气，抽出手，无奈轻笑，\n\n“好，不做。”\n\n手臂重新落到腰间，纪溪规规矩矩地抱着她，“那这样可以吗？我想抱着你睡，宝宝。”\n\n程诺在她怀里轻轻“嗯”了一声，身体虽然因为刚才过激的情绪而微微颤抖，但程诺的神色明显放松下来。\n\n卧室重新安静下来，头顶的壁灯慢慢暗下，纪溪轻拍着怀里人的后背，感觉到她的呼吸渐渐平缓，凤眸划过一丝柔软，纪溪闭上眼，很快就进入梦乡。\n\n在纪溪睡着之后，程诺缓缓睁开双眼。\n\n她眨了眨哭得有些酸胀的眼睛，在黑暗中仰起头，轻轻碰了下纪溪的嘴唇，无声呢喃，\n\n笨蛋。\n\n……\n\n盛家。\n\n盛云舒刚踏进宅院就捕捉到空气中紧张的氛围，嚼着口香糖的动作慢下来，她摘下墨镜大步朝里走去。\n\n大厅里，盛家私人医生围着躺在地上那人进行急救，周围的人脸色严峻，alpha都被驱散，盛云舒一进来便闻到一股甜腻的奶糖味。\n\n她迅速从口袋里掏出一个隔离贴贴在腺体上，随即走过去，扫了眼地上那人，发现是盛青山生父的私生子之一。\n\n他比盛云舒小五岁，也是omega，长相甜美，身量纤细，和一些富二代玩得很好。\n\n但此刻却嘴唇发紫神志不清，医生解开他的上衣，盛云舒看到他的腹部有一块青紫的印记。\n\n挥手招来侍者，盛云舒抬了抬下巴，“怎么回事？”\n\n侍者看了眼楼上，小声道，“他刚才端了碗加了东西的药膳送给家主，被家主发现，但没想到他来之前也给自己下了药……他抱着家主的腿，求她帮忙解药，然后被家主踹下楼了。”\n\n抱着家主的腿？盛云舒眉头一皱。\n\n路过他时“不小心”踩到他的右手，盛云舒也没挪开，看了眼他涨红的脸，对一旁的医生说，“我看他脸色挺好的，是不是睡着了？”\n\n医生看着踩在他手上的靴子，额头冒出冷汗，“他应该是撞到脑子晕过去了，二小姐。”\n\n“哦。”\n\n盛云舒重重地碾了几下他的手背，语气轻飘飘道，“好好治，这么大个人还能把自己摔到，看来是基因有缺陷啊。”\n\n周围的侍者都低着头不敢吭声。\n\n盛云舒乘坐电梯来到六楼，她敲了下门，也没等回应就直接进去了。\n\n盛青山正在处理公务，头也不抬道：“不是在拍宣传片吗，怎么回来了？”\n\n盛云舒气鼓鼓地走到她面前，一拍桌，“那个谁你打算怎么处置？”\n\n“赶出去。”盛青山丝毫不在意。\n\n盛云舒脸色好了点，把拍到的照片给她看，\n\n“咯，溪姐要是知道程诺私下跟应清和联系……”",
+        "translatedTitle": "Phần 2",
+        "translatedText": "Trình Nặc nước mắt rơi càng thêm dữ dội, cô ôm chặt lấy Kỷ Khê, bả vai khẽ run lên, \"Em chưa từng là người thay thế...... Người em muốn từ trước đến nay vẫn luôn là chị. Năm đó em chọn rời đi, là vì em không xứng với chị, em không có tư cách đứng bên cạnh chị, Úng Thanh Hòa là người duy nhất vươn tay giúp em. Lúc em ký hợp đồng xong mới biết được quan hệ giữa cô ta và chị...... Nếu em sớm biết chị hận cô ta như vậy, em sẽ không...... em sẽ không như thế!\"\n\nTrình Nặc vùi mặt vào hõm cổ nàng, nước mắt trong chớp mắt đã làm ướt một mảng da thịt nhỏ,\n\"Kỷ Khê, em không muốn làm chim hoàng yến được chị nuôi bên người, em không cần...... Em muốn đứng bên cạnh chị, em muốn tất cả mọi người đều biết chị là vợ của em. Em biết mình rất tham lam, nhưng em chính là muốn chiếm hữu toàn bộ của chị.\"\n\nKỷ Khê siết chặt cánh tay, cằm nhẹ nhàng cọ cọ đỉnh đầu Trình Nặc, lặp đi lặp lại thì thầm bên tai, \"Chị biết rồi, chị biết rồi, sau này chúng ta không nhắc đến nữa có được không? Em không hề tham lam chút nào, chị chỉ hy vọng em có thể táo bạo hơn một chút, muốn đòi hỏi chị bất cứ thứ gì.\"\n\nNàng nâng gương mặt đẫm lệ của Trình Nặc lên, đầy xúc động và trân trọng hôn cô, Trình Nặc nhắm mắt đáp lại nàng, giữa môi hai người thấm đẫm vị đắng chát.\n\nKhi tay của alpha trượt dọc theo xương sống xuống phía dưới, Trình Nặc chợt nắm lấy cổ tay nàng, đôi mắt đỏ hoe trừng trừng nhìn nàng, \"Không cho phép sờ em! Tối nay em không muốn làm, tối mai cũng không! Trước khi em mở miệng, không cho phép chị đụng vào em!\"\n\nĐộng tác của Kỷ Khê cứng đờ, trong đáy mắt xẹt qua một tia ngỡ ngàng cùng dục vọng khó che giấu, nhưng nhìn đôi mắt ươn ướt kèm theo chút hờn dỗi chưa tiêu tan của omega, nàng hít sâu một chiều, rút tay về, bất đắc dĩ cười khẽ,\n\"Được, không làm.\"\n\nCánh tay lại lần nữa rơi về vòng eo, Kỷ Khê quy củ ôm lấy cô, \"Vậy thế này được không? Chị muốn ôm em ngủ, bảo bối.\"\n\nTrình Nặc khẽ \"ừ\" một tiếng trong ngực nàng, cơ thể tuy vì cảm xúc kích động ban nãy mà hơi run rẩy, nhưng sắc mặt Trình Nặc đã thả lỏng rõ rệt.\n\nPhòng ngủ lại chìm vào yên tĩnh, chiếc đèn tường trên đầu từ từ tối xuống, Kỷ Khê nhẹ nhàng vỗ về tấm lưng người trong ngực, cảm nhận hô hấp của cô dần trở nên bình ổn, phượng mâu xẹt qua một tia mềm mại, Kỷ Khê nhắm mắt lại, rất nhanh đã chìm vào giấc ngủ.\n\nSau khi Kỷ Khê ngủ say, Trình Nặc chậm rãi mở hai mắt ra.\n\nCô chớp chớp đôi mắt khóc đến mức có chút cay xức, trong bóng tối ngẩng đầu lên, nhẹ nhàng chạm vào môi Kỷ Khê, vô thanh thì thầm,\n\nĐồ ngốc.\n\n......\n\nNhà họ Sảng.\n\nThịnh Vân Thư vừa bước vào trong viện đã bắt được bầu không khí căng thẳng trong không khí, động tác nhai kẹo cao su chậm lại, nàng cởi kính râm sải bước đi thẳng vào trong.\n\nTrong đại sảnh, bác sĩ riêng của nhà họ Thịnh đang vây quanh người đang nằm dưới đất để cấp cứu, sắc mặt những người xung quanh vô cùng nghiêm trọng, các alpha đều đã bị đuổi ra ngoài, Thịnh Vân Thư vừa bước vào liền ngửi thấy một mùi kẹo sữa ngọt ngấy.\n\nNàng nhanh chóng lấy một miếng dán cách ly từ trong túi ra dán lên tuyến thể, lập tức bước qua đó, quét mắt nhìn người dưới đất một cái, phát hiện đó là một trong những đứa con riêng của cha ruột Thịnh Thanh Sơn.\n\nCậu ta nhỏ hơn Thịnh Vân Thư năm tuổi, cũng là một Omega, tướng mạo ngọt ngào, vóc dáng mảnh mai, chơi rất thân với một số phú đại gia.\n\nNhưng giờ phút này môi lại tím tái thần chí không rõ, bác sĩ cởi áo ngoài của cậu ta ra, Thịnh Vân Thư nhìn thấy trên bụng cậu ta có một vết bầm xanh tím.\n\nKhoát tay gọi người phục vụ tới, Thịnh Vân Thư nhấc cằm lên, \"Chuyện gì thế này?\"\n\nNgười phục vụ liếc nhìn lầu trên, nhỏ giọng nói, \"Cậu ta vừa rồi bưng một chén canh thuốc có bỏ thêm thứ gì đó đưa tới cho gia chủ, bị gia chủ phát hiện, nhưng không ngờ trước khi tới cậu ta cũng tự hạ dược mình...... Cậu ta ôm chân gia chủ, cầu xin cô ấy giúp giải dược, sau đó bị gia chủ đá văng từ lầu xuống.\"\n\nÔm chân gia chủ? Lông mày Thịnh Vân Thư nhíu lại.\n\nLúc đi ngang qua \"vô tình\" dẫm lên tay phải của cậu ta, Thịnh Vân Thư cũng không dịch ra, liếc nhìn khuôn mặt đỏ bừng của cậu ta, nói với vị bác sĩ bên cạnh, \"Tôi thấy sắc mặt cậu ta rất hồng hào mà, có phải đang ngủ không?\"\n\nBác sĩ nhìn đôi bốt đang dẫm trên tay cậu ta, trán túa mồ hôi lạnh, \"Cậu ta chắc là đập đầu nên ngất đi rồi, Nhị tiểu thư.\"\n\"Ồ.\"\n\nThịnh Vân Thư nặng nề dẫm mạnh vài cái lên mu bàn tay cậu ta, ngữ khí hờ hững nói, \"Chữa cho cẩn thận vào, người lớn từng này rồi mà còn có thể tự ngã được, xem ra gen có khuyết tật rồi.\"\n\nNgười phục vụ xung quanh đều cúi đầu không dám lên tiếng.\n\nThịnh Vân Thư đi thang máy lên lầu sáu, nàng gõ cửa một cái, cũng không đợi người ta đáp lại đã trực tiếp đẩy cửa đi vào.\n\nThịnh Thanh Sơn đang xử lý công việc, đầu cũng không ngẩng lên nói: \"Không phải đang quay phim quảng cáo sao, sao lại về rồi?\"\n\nThịnh Vân Thư tức phì phò đi đến trước mặt cô, vỗ mạnh một cái lên bàn, \"Tên kia định xử lý thế nào?\"\n\"Đuổi cổ.\" Thịnh Thanh Sơn hoàn toàn không để tâm.\n\nSắc mặt Thịnh Vân Thư tốt hơn một chút, đem bức ảnh chụp được đưa cho cô xem,\n\"Đây này, nếu chị Sảnh mà biết Trình Nặc sau lưng liên lạc với Úng Thanh Hòa......\"",
+        "status": "completed",
+        "wordCount": 1315,
+        "issues": [],
+        "summary": "Trình Nặc thổ lộ lòng mình với Kỷ Khê và được đối phương ôm ấp, dỗ dành, cả hai hóa giải hiểu lầm trước khi chìm vào giấc ngủ. Sau đó, Thịnh Vân Thư trở về nhà họ Thịnh và chứng kiến cảnh cấp cứu căng thẳng liên quan đến một đứa con riêng của cha cô.",
+        "chineseCharCount": 0,
+        "pronounAudit": {
+          "charactersDetected": [
+            {
+              "zh": "程诺",
+              "vi": "Trình Nặc",
+              "gender": "Nữ",
+              "role": "Omega, người yêu của Kỷ Khê"
+            },
+            {
+              "zh": "纪溪",
+              "vi": "Kỷ Khê",
+              "gender": "Nữ",
+              "role": "Alpha, người yêu của Trình Nặc"
+            },
+            {
+              "zh": "盛云舒",
+              "vi": "Thịnh Vân Thư",
+              "gender": "Nữ",
+              "role": "Tiểu thư nhà họ Thịnh"
+            },
+            {
+              "zh": "盛青山",
+              "vi": "Thịnh Thanh Sơn",
+              "gender": "Nam",
+              "role": "Cha ruột của Thịnh Vân Thư"
+            }
+          ],
+          "pronounPairs": [
+            {
+              "speaker": "Trình Nặc",
+              "listener": "Kỷ Khê",
+              "speakerSelf": "Em",
+              "speakerCallsOther": "Chị",
+              "tone": "thân mật, yêu thương"
+            },
+            {
+              "speaker": "Kỷ Khê",
+              "listener": "Trình Nặc",
+              "speakerSelf": "Chị",
+              "speakerCallsOther": "Em / bảo bối",
+              "tone": "thân mật, cưng chiều"
+            }
+          ],
+          "consistencyNotes": "Nhất quán 100%"
+        }
+      },
+      {
+        "id": "8e16f8aa-7d54-46e3-933a-7e2c14e2ae85",
+        "index": 3,
+        "title": "“什么？”",
+        "originalText": "程诺被她问得一愣，眼神困惑。\n\n手指摩挲着她的掌心，纪溪语气沉重得像是在交代后事，“有一个九十多岁身体健朗但脾气不太好的老太太想要体会一下儿孙绕膝的天伦之乐，你愿意满足她吗？”\n\n越说越奇怪。\n\n程诺抽出手，“不敢愿意。”\n\n纪溪发出一声长长的哀叹，抱住程诺的腰，脸埋进平坦的小腹蹭着，“我也不敢，但我要是不回去，耳朵得离家出走。”说着又抱紧了程诺。\n\n小腹传来不适，程诺想往后退但却被牢牢锁住，只得搭上纪溪的肩膀轻轻一推，“别蹭，衣服都弄乱了。”\n\n纪溪没动，仰起脸，看向她的眼神带着一丝幽怨，“所以，现在我连衣服都比不上了是吧。宝宝，你上上个月对我可不是这个态度。”\n\n果然是得到了就不珍惜，渣女！\n\n程诺屈指挠了下她的下巴，腰身往后挪了几分，“上上上个月，某个人连面都让我见，现在还来翻旧账？”\n\n纪溪被噎了一下，开始转移话题，“好吧好吧，不愿意也没事，你待会还要干嘛？今天怎么没见到你那个秘书，平时你俩不是形影不离吗？”\n\n语气酸溜溜的。\n\n程诺戳戳她的脸，轻声道：“有一批药抽检不合格，已经封存同生产线的库存，下午两点我要去药监局提交相关材料。苏晟有事请假了。”\n\n闻言纪溪眉头一皱，担忧道：“没事吧？需要我做些什么？”\n\n医疗卫生类的民生企业一旦曝出问题那就没有小事，处理不好，轻则股票大跌，重则政府和民众对品牌失去信任，不再有政策帮扶、绿色通道。\n\n程诺膝盖抵在她的两腿之间，垂落的长发拂过她的脸颊，指尖轻轻描摹着她的眉眼，黑眸沉静如水，\n\n“不用。已经查出来是经销商那边出了问题，这批药刚上市不久，在收到通知的第一时间我就安排人回收药剂，也对相关人员进行了补偿，政府方面我们也尽力配合，没闹大。”\n\n或许是体质原因，程诺的手总是冰凉的，微凉的指尖在她的眉间滑动带起一阵酥麻。\n\n纪溪还保持着仰视的姿势，程诺这副一切尽在掌握之中的姿态让纪溪的心跳陡然加快，琥珀色的眼眸闪动着痴迷。\n\n环在腰间的手臂收紧，喉间滚动，纪溪小声开口，“宝宝，你想不想亲我一下？”\n\n动作一顿，程诺的指尖恰好停在纪溪的眼尾。\n\n那双琥珀色的眼眸里水光潋滟，清晰地倒映着她的影子。\n\n程诺没有立刻回答，目光从纪溪的眉眼缓缓划过她轻颤的眼睫、高挺的鼻骨，最终落在那微微张开的、色泽诱人的唇瓣上。\n\n捏住她的下巴，在纪溪期待渴求的目光中，程诺低下头，一个蜻蜓点水般的吻落在她的唇角。\n\n一触即分，好似燃油入火堆。\n\n凤眸染上春情，纪溪不甘地仰头去追，却被手指抵住。\n\n迎上那憋闷的双眼，程诺勾起唇角，眼底冬雪消融，轻柔的嗓音如春雨般浸润心田，\n\n“不可以。”\n\n“昨晚说好要遵循我的意愿，姐姐，又要欺负我吗？”\n\n纪溪锁着眉头，炙热的吻落在指间，温热的舌探出尝到她的味道，在她瑟缩抽回前牢牢握住，闷闷地嘀咕着，\n\n“谁欺负谁啊……昨晚说的明明是不能做，怎么连亲一下都不行？”\n\n眸光微动，程诺低首垂眸，搭在纪溪肩上的手微微用力，缩短了彼此间的距离，温热的呼吸伴随着心跳声交织缠绕。\n\n红唇再次擦过她的唇角，鼻尖相抵，程诺脸上的笑多了一丝俏皮，\n\n“就是不许，怎样？”\n\n纪溪继续板脸。\n\n但四目相对，爱意似新芽破开强装的假面，唇角眉梢尽染欢喜。双臂拥人入怀，纪溪轻嗅她发丝间的香味，不掺杂情欲的吻落在颈部，眼神变得柔软，\n\n“真不讲理啊，那我就只好多抱抱你，让你早点心软啦……”\n\n……\n\n中午两人是在食堂吃的。\n\n由于纪溪的出现，今天食堂的用餐人数激增，虽然没人敢凑上来打招呼，但不管她俩走到哪都会收到炽热的注目礼。\n\n就算纪溪心再大，被几十上百个人盯着吃饭，她也有点吃不消。\n\n程诺好点，她很快就吃好了，单手撑着脑袋，似笑非笑地盯着闷头吃饭的纪溪。\n\n纪溪胡乱扒拉完最后几口饭，拉着程诺的手，在周围一众吸气声中快速离开食堂。\n\n直到进入专属电梯，纪溪长长地舒了一口气，抱怨道：“你们公司的员工，热情得有点过头了吧？还有，为什么你没有独立的用餐区？”\n\n赶上高峰期还得排队，多麻烦。\n\n程诺任由她牵着手，指尖在她掌心挠了挠，“吃个饭而已，没必要搞特殊。员工们大概是没想到，新闻杂志上高不可攀的大总裁，私底下……”语气微顿，眼波流转，“是这副模样。”\n\n“哪副模样？”\n\n眉梢轻挑，纪溪上前一步，将程诺抵在电梯上，两指夹住她的耳垂轻轻揉捏，“说清楚点。”\n\n电梯还在上升，程诺握住她的手，迎着她的视线，红唇贴上掌心，嗓音温柔却带着戏谑，\n\n“不仅平易近人，还……爱黏人。”\n\n瞧见她眼底的打趣，纪溪轻笑，低头咬了下她的唇，闷声道：“她们可不知道，有人冷淡得很，碰都不让碰，怎么黏啊？”\n\n“你都上嘴了，说这话不心虚吗？”\n\n“这种程度不至于。”\n\n饭后程诺照例要睡半个小时，纪溪虽然不困，但她很乐意抱着程诺睡一会。\n\n换好睡衣从卫生间出来，程诺看到横躺在床上的纪溪，她走过去坐在床边，拍了拍她的脸，“躺好了，你这样我怎么睡啊？”\n\n“该怎么睡就怎么睡啊。”纪溪看了眼她的睡衣，勾住她的小指轻晃着，“奇怪了，昨晚我在你家翻到的睡衣睡袍都是这种类型，但你之前在我那穿的好像不是这种吧？怎么回事啊？”\n\n程诺现在穿的，以及昨晚纪溪看到的，大多都是中规中矩的类型——虽然她穿什么纪溪都很喜欢，但这些很显然不像先前那几套充满暗示意味。\n\n程诺装傻，拍拍她的胳膊让她翻个身，自己则躺在她身边，“都快入冬了，那种太凉爽了。”\n\n纪溪调整好姿势，从身后抱住她，手心贴在她的腹部，眼底有笑意蔓延，“说得对，不过我那边暖气充足，穿凉爽点也不会着凉~”\n\n所以请搬到我家里吧。\n\n“不许揉，刚吃过饭呢。”轻拍着她的手背，程诺闭上眼，声音渐弱，“你上午说的那位脾气不太好的老太太是不是你姥姥？”\n\n纪溪没想到她突然提这事，耳朵又开始疼了，\n\n“嗯，不过你别担心，家里面的事我会处理好的，等到你什么时候准备好了，我们再回去。”\n\n我们……\n\n程诺在心里反复咀嚼这两个字，唇角微扬。\n\n纪溪亲了下她的后颈，收紧双臂，“不聊了，你下午还有事呢，赶紧休息，这些事晚上回家再谈。”\n\n程诺翻了个身，在她怀里找了个舒服的姿势，“好……”\n\n下午程诺离开广元没多久，纪溪就接到姥姥的电话，她生怕姥姥真让人把程诺“请”回去，马不停蹄地赶回家，然后又被拧着耳朵念叨了好几个小时。\n\n从老宅出来后，纪溪满脸沧桑的站在太阳底下，已经感觉不到耳朵的存在了。\n\n她晃了晃晕乎乎的脑子，给程诺发了个消息说在家等她，然后回家收拾了几套衣服，在03依依不舍的注视下暂时搬到程诺那。\n\n程诺回来前，纪溪在灵风的辅助下做了一份蔬菜沙拉。\n\n本来还做了香草焗虎虾，但味道比灵风做的差太多，纪溪唉声叹气地把它们消灭了。\n\n忙了一天够累了，总不能让她吃这些。\n\n谁知程诺知道后面露失望，放下筷子看着纪溪，“下次不管做了什么菜，都让我尝尝好吗？你做的我都会喜欢。”\n\n纪溪给她盛了碗热汤，“我只能保证它们熟了，不好吃的。”\n\n“我不挑食。”\n\n手上动作一顿，纪溪心里像是扎进一根尖刺，她忙垂下眼睫，清了清嗓子，“行，以后我做什么都先让你尝尝。快吃吧，这个虾凉了就不好吃了。”\n\n程诺还沉浸在没尝到她手艺的失落中，没有察觉到纪溪眼底的心疼。\n\n浴室。\n\n程诺将用过的卫生棉用垃圾袋裹住丢进垃圾桶里，又往里面丢了几张纸，随后打开循环系统，确定空气中没有血腥味后开门离开。\n\n趁着纪溪洗澡的间隙，程诺打了一针强效抑制剂，一瞬间眩晕袭来，手指紧扣住床垫，程诺脸色难看，有点恶心。\n\n等缓过来，程诺又吃了几粒止疼药，让灵风把包装袋拿走销毁。\n\n浴室的水声停了。\n\n程诺迅速调整好呼吸，将那点不适压下，指尖的颤抖也归于平静。她靠在床头，随手拿起一本名著翻阅起来，暖黄的灯光落下，勾勒出侧脸柔和的轮廓。\n\n纪溪带着一身水汽走出来，浴袍松垮垮地系着，发梢还滴着水，她熟练地弯腰亲了程诺一下，抿了下嘴，低声嘀咕：\n\n“怎么苦苦的？”\n\n程诺举起书挡在两人之间，乜了她一眼，“那你去找个甜甜的。”\n\n纪溪咧开嘴，把书拿到一边，“刚才太快了，我再好好尝尝……”\n\n程诺闭上眼，微仰着头，享受着这个吻。\n\n缠绵的一吻结束，两人的气息都乱了，纪溪抚摸着她的脸颊，望着她湿润的双眸，眼里的欲念犹如实质。\n\n打算顺水推舟进行下一步时，程诺主动凑上来亲了她一口，\n\n“姐姐，今天好累，下次好不好？”\n\n下次到底是哪次啊宝宝……\n\n纪溪没吭声，程诺又凑上来亲了她好几口，纪溪长叹一声，翻身滚到床上躺在她身边，不情不愿地闭上眼，\n\n“好了，我已经睡了。”\n\n程诺眼底笑意点点，她关上灯，躺下来的时候亲了下她的脸颊，“晚安，姐姐。”\n\n“哎，”纪溪抱住她，揉了揉她的脑袋，“晚安，宝宝。”\n\n四周归于寂静。\n\n半夜，纪溪被热醒，她连忙打开灯，发现程诺嘴唇皲裂发白，怎么叫也叫不醒，信息素也浓得不正常。\n\n纪溪赶忙把人送到医院，联系人安排急救。\n\n今夜值班的刚好是纪溪的老同学，她看完程诺的血检报告，以及超声检查报告，把纪溪叫到办公室，神情严肃，\n\n“她流产不久，你怎么能让她注射强效抑制剂？严重的话是会死人的！”",
+        "translatedTitle": "Chương 1: \"Cái gì?\"",
+        "translatedText": "Trình Nặc bị cô hỏi cho ngẩn người, ánh mắt tràn đầy khó hiểu.\n\nĐầu ngón tay mơn trớn lòng bàn tay cô, giọng điệu Kỷ Khê trầm trọng như đang trăn trối dặn dò hậu sự, \"Có một lão thái thái hơn chín tuổi thân thể kiện khang nhưng tính tình không tốt lắm muốn trải nghiệm niềm vui gia đình sum vầy bên con cháu, em có bằng lòng làm cho bà ấy mãn nguyện không?\"\n\nCàng nói càng thấy kỳ lạ.\n\nTrình Nặc rút tay về, \"Em không dám bằng lòng.\"\n\nKỷ Khê phát ra một tiếng thở dài thật dài, ôm lấy eo Trình Nặc, vùi mặt vào vùng bụng phẳng lì cọ cọ, \"Chị cũng không dám, nhưng nếu chị không về, đôi tai này chắc phải bỏ nhà ra đi mất.\" Nói xong lại càng ôm chặt Trình Nặc hơn.\n\nVùng bụng truyền đến cảm giác khó chịu, Trình Nặc muốn lùi về sau nhưng lại bị ôm chặt lấy, đành phải đặt tay lên bã vai Kỷ Khê nhẹ nhàng đẩy ra, \"Đừng cọ nữa, quần áo đều bị làm xộc xệch hết rồi.\"\n\nKỷ Khê không nhúc nhích, ngẩng mặt lên, nhìn nàng với ánh mắt mang theo một chút u oán, \"Cho nên, bây giờ đến quần áo mà chị cũng không bằng đúng không. Bảo bối, tháng trước thái độ của em đối với chị không phải thế này đâu.\"\n\nQuả nhiên là có được rồi thì không biết trân trọng, đồ tra nữ!\n\nTrình Nặc cong ngón tay gãi cằm cô, phần eo dịch về phía sau mấy phân, \"Tháng trước nữa, có người còn chẳng thèm cho em gặp mặt, bây giờ lại còn đến lật lại chuyện cũ à?\"\n\nKỷ Khê bị nghẹn họng, bắt đầu chuyển chủ đề, \"Được rồi được rồi, không bằng lòng thì thôi, lát nữa em còn phải làm gì? Sao hôm nay không thấy thư ký của em đâu, bình thường hai người chẳng phải hình bóng không rời sao?\"\n\nGiọng điệu vô cùng chua ngoa.\n\nTrình Nặc chọc chọc má cô, giọng nói nhẹ nhàng: \"Có một lô thuốc kiểm tra chất lượng không đạt tiêu chuẩn, kho hàng cùng dây chuyền sản xuất đã bị phong tỏa rồi, hai giờ chiều nay chị phải đến cục quản lý dược nộp tài liệu liên quan. Tô Thịnh có việc xin nghỉ phép rồi.\"\n\nNghe vậy Kỷ Khê nhíu mày, lo lắng hỏi: \"Không sao chứ? Cần chị giúp gì không?\"\n\nDoanh nghiệp sinh kế thuộc lĩnh vực y tế vệ sinh một khi phơi bày vấn đề thì không có chuyện nào là chuyện nhỏ cả, xử lý không tốt, nhẹ thì cổ phiếu rớt thảm hại, nặng thì chính phủ và người dân mất đi lòng tin đối với thương hiệu, sẽ không còn chính sách hỗ trợ hay lối đi màu xanh nữa.\n\nĐầu gối Trình Nặc đặt giữa hai chân cô, mái tóc dài xõa xuống lướt qua gò má cô, đầu ngón tay nhẹ nhàng phác họa chân mày và khóe mắt cô, đôi mắt đen trầm tĩnh như nước,\n\n\"Không cần. Đã tra ra là phía nhà phân phối xảy ra vấn đề, lô thuốc này mới lên thị trường chưa lâu, ngay lúc nhận được thông báo em đã sắp xếp người thu hồi thuốc, đồng thời cũng bồi thường cho những nhân viên liên quan, phía chính phủ chúng em cũng dốc sức phối hợp, không làm lớn chuyện.\"\n\nCó lẽ là do thể chất, tay của Trình Nặc luôn lạnh ngắt, đầu ngón tay hơi lạnh lướt trên mi tâm cô mang theo một trận tê dại.\n\nKỷ Khê vẫn duy trì tư thế ngước nhìn, bộ dạng nắm chắc mọi thứ trong tay này của nàng khiến tim cô đột ngột đập loạn nhịp, đôi mắt màu hổ phách chớp động vẻ say mê.\n\nVòng tay siết chặt lấy eo, cổ họng chuyển động, Kỷ Khê nhỏ giọng mở lời, \"Bảo bối, em có muốn hôn chị một cái không?\"\n\nĐộng tác khựng lại, đầu ngón tay Trình Nặc vừa khéo dừng lại ở đuôi mắt Kỷ Khê.\n\nĐôi mắt màu hổ phách tràn ngập làn nước long lanh, phản chiếu rõ mồn một bóng hình nàng.\n\nTrình Nặc không trả lời ngay, ánh mắt từ chân mày Kỷ Khê lướt chậm qua hàng mi đang run rẩy, sống mũi cao ngất, cuối cùng dừng lại ở đôi môi hé mở, mang sắc màu quyến rũ kia.\n\nNắm lấy cằm cô, dưới ánh mắt chờ mong và khao khát của Kỷ Khê, Trình Nặc cúi đầu, một nụ hôn chuồn chuồn lướt nước đặt lên khóe môi cô.\n\nChạm vào là tách ra, tựa như dầu bén vào đống lửa.\n\nĐôi mắt phượng vương vấn tình xuân, Kỷ Khê không cam lòng ngẩng đầu đuổi theo, nhưng lại bị ngón tay chặn lại.\n\nĐón lấy ánh mắt ấm ức kia, Trình Nặc cong khóe môi, đáy mắt băng tuyết tan rã, giọng nói dịu dàng thấm nhuận tâm điền như mưa xuân,\n\n\"Không được.\"\n\n\"Đêm qua đã đồng ý là phải tuân theo ý nguyện của em, chị, lại muốn ăn hiếp em sao?\"\n\nKỷ Khê nhíu chặt mày, nụ hôn nóng bỏng rơi lên kẽ tay, chiếc lưỡi ấm áp vươn ra nếm thử hương vị của nàng, trước khi nàng rụt tay về đã nắm chặt lấy, lẩm bẩm trong lồng ngực,\n\n\"Ai ăn hiếp ai chứ... Rõ ràng đêm qua nói là không được làm, sao đến hôn một cái cũng không cho?\"\n\nÁnh mắt khẽ động, Trình Nặc cúi đầu rủ mi, bàn tay đặt trên vai Kỷ Khê dùng chút lực, rút ngắn khoảng cách giữa hai người, hơi thở ấm áp đan xen quấn quýt cùng tiếng tim đập.\n\nĐôi môi đỏ mọng lại một lần nữa lướt qua khóe môi cô, chóp mũi chạm vào nhau, nụ cười trên mặt Trình Nặc mang theo thêm một chút nghịch ngợm,\n\n\"Chính là không cho phép, thì sao chứ?\"\n\nKỷ Khê tiếp tục làm mặt lạnh.\n\nNhưng bốn mắt nhìn nhau, tình yêu tựa như chồi non phá vỡ lớp mặt nạ giả vờ kiên cường, khóe môi đuôi mày ngập tràn hỷ sự. Vòng tay ôm người vào lòng, Kỷ Khê khẽ hít hà hương thơm vương vấn trên mái tóc nàng, nụ hôn không lẫn chút dục vọng nào rơi lên cổ, ánh mắt trở nên mềm mại,\n\n\"Thật là vô lý quá đi, vậy thì chị đành ôm em nhiều một chút, để em sớm mềm lòng vậy...\"\n\n...\n\nBuổi trưa hai người ăn ở nhà ăn.\n\nDo sự xuất hiện của Kỷ Khê, số lượng người dùng bữa ở nhà ăn hôm nay tăng vọt, mặc dù không ai dám sáp lại gần chào hỏi, nhưng dù hai người đi đến đâu cũng sẽ nhận được những ánh mắt chăm chú đầy nóng bỏng.\n\nCho dù Kỷ Khê có tâm đại đến đâu, bị mấy chục mấy trăm người nhìn chằm chằm lúc ăn cơm, cô cũng có chút không chịu nổi.\n\nTrình Nặc khá hơn một chút, nàng ăn xong rất nhanh, một tay chống cằm, mang theo ý cười nhìn chằm chằm Kỷ Khê đang cúi đầu ăn cơm.\n\nKỷ Khê ăn vội mấy miếng cuối cùng, kéo tay Trình Nặc, nhanh chóng rời khỏi nhà ăn giữa tiếng hít khí của mọi người xung quanh.\n\nCho đến khi bước vào thang máy độc quyền, Kỷ Khê mới thở phào nhẹ nhõm một hơi dài, oán trách nói: \"Nhân viên công ty em, nhiệt tình có hơi quá mức rồi đấy chứ? Hơn nữa, sao em lại không có khu vực ăn uống độc lập cơ chứ?\"\n\nGặp lúc cao điểm còn phải xếp hàng, phiền phức biết bao.\n\nTrình Nặc mặc kệ cô nắm tay, đầu ngón tay cào cào trong lòng bàn tay cô, \"Chỉ là ăn một bữa cơm thôi, không cần thiết phải làm màu đặc biệt. Nhân viên đại khái là không ngờ tới, tổng tài cao cao tại thượng trên báo chí tạp chí, ở phía sau...\" Ngữ điệu khẽ ngưng, ánh mắt đảo một vòng, \"lại là bộ dáng này.\"\n\n\"Bộ dáng nào?\"\n\nĐuôi mày khẽ nhướng, Kỷ Khê bước lên một bước, ép Trình Nặc dán vào thành thang máy, dùng hai ngón tay kẹp lấy vành tai nàng nhẹ nhàng xoa nắn, \"Nói cho rõ ràng xem nào.\"\n\nThang máy vẫn đang đi lên, Trình Nặc nắm lấy tay cô, nghênh đón ánh mắt của cô, đôi môi đỏ mọng áp lên lòng bàn tay, giọng nói dịu dàng nhưng mang theo ý trêu chọc,\n\n\"Không chỉ gần gũi dễ gần, mà còn... rất thích dính người.\"\n\nNhìn thấy sự trêu chọc trong đáy mắt nàng, Kỷ Khê khẽ cười, cúi đầu cắn nhẹ môi nàng, lẩm bẩm:\n\n\"Bọn họ đâu có biết, có người lạnh lùng lắm, chạm vào cũng không cho chạm, dính kiểu gì chứ?\"\n\n\"Chị đều ngoạm cả miệng lên rồi, nói câu này mà không thấy chột dạ à?\"\n\n\"Mức độ này thì chưa đến nỗi đâu.\"\n\nSau bữa ăn Trình Nặc theo lệ thường sẽ ngủ nửa tiếng, Kỷ Khê tuy không buồn ngủ nhưng cô rất thích ôm Trình Nặc ngủ một lát.\n\nThay bộ đồ ngủ bước ra từ phòng vệ sinh, Trình Nặc nhìn thấy Kỷ Khê đang nằm dài trên giường, nàng bước tới ngồi bên mép giường, vỗ vỗ mặt cô, \"Nằm cho đàng hoàng vào, chị nằm thế này thì em ngủ kiểu gì?\"\n\n\"Thì cứ ngủ như bình thường chứ sao.\" Kỷ Khê liếc nhìn bộ đồ ngủ của nàng, móc lấy ngón út của nàng khẽ lắc lư, \"Lạ thật đấy, tối qua lúc chị lục tìm trong nhà em, đồ ngủ với áo choàng tắm đều là kiểu này cả, nhưng hình như trước đây em mặc ở chỗ chị không phải kiểu này thì phải? Sao lại thế nhỉ?\"\n\nNhững gì Trình Nặc đang mặc lúc này, và những gì Kỷ Khê nhìn thấy tối qua, đại đa số đều là kiểu dáng quy củ tiêu chuẩn — mặc dù Trình Nặc mặc gì thì Kỷ Khê cũng thích hết, nhưng những thứ này rõ ràng không mang tính ám chỉ đầy rẫy như mấy bộ trước đó.\n\nTrình Nặc giả ngốc, vỗ vỗ cánh tay cô bảo cô lật người lại, còn mình thì nằm xuống bên cạnh cô, \"Sắp sang đông đến nơi rồi, kiểu kia mát mẻ quá.\"\n\nKỷ Khê điều chỉnh lại tư thế, ôm lấy nàng từ phía sau, lòng bàn tay áp lên bụng nàng, đáy mắt lan tràn ý cười nói:\n\n\"Nói rất đúng, nhưng chỗ chị hệ thống sưởi đầy đủ, có mặc mát mẻ chút cũng không bị cảm lạnh đâu~\"\n\nCho nên xin hãy dọn đến nhà chị đi.\n\n\"Không cho phép xoa, vừa mới ăn cơm xong đấy.\" Nhẹ nhàng vỗ vỗ mu bàn tay cô, Trình Nặc nhắm mắt lại, giọng nói nhỏ dần đi: \"Người lớn tuổi tính tình không tốt lắm mà chị nhắc đến sáng nay chẳng lẽ là ngoại của chị à?\"\n\nKỷ Khê không ngờ nàng lại đột nhiên nhắc đến chuyện này, cái tai lại bắt đầu nhức nhối,\n\n\"Ừm, nhưng em đừng lo, chuyện trong nhà chị sẽ tự giải quyết ổn thỏa, đợi khi nào em chuẩn bị sẵn sàng, chúng ta lại về.\"\n\nChúng ta...\n\nTrình Nặc lặp đi lặp lại nhai kỹ hai chữ này trong lòng, khóe môi khẽ cong lên.\n\nKỷ Khê hôn lên sau gáy nàng, siết chặt vòng tay, \"Không trò chuyện nữa, chiều nay em còn có việc đấy, tranh thủ nghỉ ngơi đi, mấy chuyện này tối về nhà chúng ta lại bàn.\"\n\nTrình Nặc trở mình, tìm một tư thế thoải mái trong ngực cô, \"Được...\"\n\nChiều nay Trình Nặc vừa rời khỏi Quảng Nguyên không lâu, Kỷ Khê liền nhận được điện thoại của ngoại, cô sợ ngoại thật sự phái người \"mời\" Trình Nặc về, liền vội vã không ngừng nghỉ chạy về nhà, kết quả là lại bị vặn tai lải nhải mất mấy tiếng đồng hồ.\n\nĐi ra từ nhà cổ, Kỷ Khê với gương mặt tang thương đứng dưới ánh mặt trời, đã hoàn toàn không cảm nhận được sự tồn tại của đôi tai mình nữa rồi.\n\nCô lắc lắc cái đầu ong ong, gửi cho Trình Nặc một tin nhắn nói là về nhà đợi nàng, sau đó về nhà thu dọn mấy bộ quần áo, dưới ánh mắt lưu luyến không nỡ của 03 mà tạm thời chuyển sang ở chỗ Trình Nặc.\n\nTrước khi Trình Nặc về, Kỷ Khê dưới sự hỗ trợ của Linh Phong đã làm một phần salad rau củ.\n\nBan đầu còn làm cả tôm sú nướng bơ tỏi thảo mộc, nhưng mùi vị kém xa Linh Phong làm, Kỷ Khê thở ngắn thở dài ăn sạch chúng.\n\nBận rộn cả ngày đã mệt lắm rồi, không thể nào để nàng ăn những thứ này được.\n\nAi ngờ Trình Nặc biết chuyện lại lộ ra vẻ thất vọng, buông đũa nhìn Kỷ Khê, \"Lần sau dù nấu món gì, cũng để em nếm thử một chút có được không? Món nào chị nấu em cũng sẽ thích.\"\n\nKỷ Khê múc cho nàng một chén canh nóng, \"Chị chỉ có thể đảm bảo là chúng chín rồi thôi, không ngon đâu.\"\n\n\"Em không kén ăn.\"\n\nĐộng tác trên tay khựng lại, trong lòng Kỷ Khê như bị đâm thủng bởi một cây gai nhọn, cô vội rũ hàng mi, hắng giọng một tiếng, \"Được, sau này chị làm gì cũng sẽ để em nếm trước. Mau ăn đi, con tôm này nguội mất sẽ không ngon đâu.\"\n\nTrình Nặc vẫn còn đắm chìm trong sự thất vọng vì không được nếm thử tay nghề của cô, nên không hề phát hiện ra sự xót xa trong đáy mắt Kỷ Khê.\n\nPhòng tắm.\n\nTrình Nặc dùng túi rác bọc kín băng vệ sinh đã qua sử dụng rồi vứt vào thùng rác, lại ném thêm mấy tờ giấy vào bên trong, sau đó bật hệ thống thông gió, xác định trong không khí không có mùi tanh của máu rồi mới mở cửa rời đi.\n\nTranh thủ khoảng thời gian Kỷ Khê đi tắm, Trình Nặc tiêm một mũi thuốc ức chế hiệu quả cao, ngay khoảnh khắc ấy cơn chóng mặt ập tới, những ngón tay bấu chặt lấy nệm giường, sắc mặt Trình Nặc khó coi, có chút buồn nôn.\n\nĐợi đến khi cơn choáng qua đi, Trình Nặc lại uống thêm mấy viên thuốc giảm đau, bảo Linh Phong đem túi đựng thuốc đi tiêu hủy.\n\nTiếng nước trong phòng tắm đã dừng lại.\n\nTrình Nặc nhanh chóng điều hòa lại nhịp thở, đè nén sự khó chịu ấy xuống, đầu ngón tay đang run rẩy cũng trở lại bình thường. Nàng tựa vào đầu giường, tiện tay cầm lấy một cuốn danh tác lên đọc, ánh đèn vàng ấm áp rọi xuống, phác họa nên đường nét gò má mềm mại.\n\nKỷ Khê mang theo hơi nước bước ra, áo choàng tắm lỏng lẻo buộc hờ, chòm tóc mai vẫn còn nhỏ giọt nước, cô thuần thục cúi người hôn Trình Nặc một cái, mím mím môi, thấp giọng lẩm bẩm:\n\n\"Sao lại đắng thế này?\"\n\nTrình Nặc giơ sách lên chắn giữa hai người, liếc cô một cái, \"Vậy chị đi tìm cái nào ngọt ngào mà ăn ấy.\"\n\nKỷ Khê toét miệng cười, cầm cuốn sách dịch sang một bên, \"Vừa rồi nhanh quá, chị phải nếm lại cho kỹ đã...\"\n\nTrình Nặc nhắm mắt lại, ngẩng đầu lên một chút, tận hưởng nụ hôn này.\n\nNụ hôn triền miên kết thúc, hơi thở của cả hai đều trở nên hỗn loạn, Kỷ Khê mơn trớn gò má nàng, nhìn vào đôi mắt ướt át của nàng, dục vọng trong mắt chân thực như sắp chạm được.\n\nĐịnh thuận nước đẩy thuyền tiến bước tiếp theo, Trình Nặc lại chủ động sà vào hôn cô một cái,\n\n\"Chị, hôm nay em mỏi mệt quá, để lần sau được không?\"\n\nLần sau rốt cuộc là lần nào hả bảo bối...\n\nKỷ Khê không lên tiếng, Trình Nặc lại sà tới hôn cô thêm mấy cái nữa, Kỷ Khê thở dài thườn thượt, lật người lăn lên giường nằm xuống bên cạnh nàng, mặt không chút cảm tình nhắm mắt lại,\n\n\"Được rồi, chị ngủ rồi đây.\"\n\nĐáy mắt Trình Nặc điểm xuyết ý cười, nàng tắt đèn, lúc nằm xuống thì hôn lên má cô một cái, \"Ngủ ngon, chị.\"\n\n\"Ừm,\" Kỷ Khê ôm lấy nàng, xoa xoa mái tóc nàng, \"Ngủ ngon, bảo bối.\"\n\nXung quanh chìm vào yên tĩnh.\n\nNửa đêm, Kỷ Khê bị cái nóng làm cho tỉnh giấc, cô vội vàng bật đèn lên, phát hiện môi Trình Nặc nứt nẻ nhợt nhạt, gọi thế nào cũng không tỉnh nổi, tin tức tố cũng nồng nặc một cách bất thường.\n\nKỷ Khê vội vàng đưa người đến bệnh viện, liên hệ sắp xếp cấp cứu.\n\nBác sĩ trực ban đêm nay vừa vặn là bạn học cũ của Kỷ Khê, cô ấy xem xong báo cáo xét nghiệm máu của Trình Nặc, cùng với báo cáo siêu âm, liền gọi Kỷ Khê vào phòng làm việc, thần sắc nghiêm nghị,\n\n\"Cậu ấy sảy thai chưa lâu, sao em lại có thể để cậu ấy tiêm thuốc ức chế hiệu quả cao chứ? Nghiêm trọng thì là sẽ chết người đấy!\"",
+        "status": "completed",
+        "wordCount": 3411,
+        "issues": [],
+        "summary": "Kỷ Khê mặt dày đeo bám và đòi Trình Nặc hôn nhưng bị từ chối khéo. Sau đó, hai người nghiêm túc bàn bạc về sự cố lô thuốc không đạt tiêu chuẩn của công ty.",
+        "chineseCharCount": 0,
+        "pronounAudit": {
+          "charactersDetected": [
+            {
+              "zh": "程诺",
+              "vi": "Trình Nặc",
+              "gender": "Nữ",
+              "role": "Tổng tài / Người quản lý doanh nghiệp y tế"
+            },
+            {
+              "zh": "纪溪",
+              "vi": "Kỷ Khê",
+              "gender": "Nữ",
+              "role": "Người yêu của Trình Nặc"
+            },
+            {
+              "zh": "苏盛",
+              "vi": "Tô Thịnh",
+              "gender": "Nam/Nữ",
+              "role": "Thư ký của Trình Nặc (chỉ nhắc đến tên)"
+            }
+          ],
+          "pronounPairs": [
+            {
+              "speaker": "Kỷ Khê",
+              "listener": "Trình Nặc",
+              "speakerSelf": "chị",
+              "speakerCallsOther": "em / bảo bối",
+              "tone": "thân mật, nũng nịu"
+            },
+            {
+              "speaker": "Trình Nặc",
+              "listener": "Kỷ Khê",
+              "speakerSelf": "em",
+              "speakerCallsOther": "chị",
+              "tone": "thân mật, ôn nhu"
+            }
+          ],
+          "consistencyNotes": "Nhất quán 100%"
+        },
+        "qaReport": {
+          "score": 100,
+          "status": "excellent",
+          "recommendation": "ready",
+          "recommendationText": "Bản dịch đạt chuẩn xuất bản 100%! Không phát hiện lỗi đáng kể.",
+          "issues": [],
+          "stats": {
+            "viWordCount": 2954,
+            "rawCharCount": 3695,
+            "lengthRatio": 1.14,
+            "chineseCharCount": 0,
+            "aiMetaCount": 0,
+            "convertArtifactCount": 0,
+            "quoteBalanced": true
+          }
+        }
+      }
+    ],
+    "createdAt": "2026-09-03T13:53:45.345Z",
+    "updatedAt": "2026-09-04T03:40:24.311Z"
+  }
+]

@@ -1,0 +1,11 @@
+name = "edithangloat"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "client/dist"
+
+# Cloudflare D1 Database Binding
+# Sau khi chạy lệnh tạo D1: npx wrangler d1 create edithangloat-db
+# Điền database_id vào bên dưới:
+[[d1_databases]]
+binding = "DB"
+database_name = "edithangloat-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
