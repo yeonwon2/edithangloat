@@ -1,13 +1,24 @@
-import React from 'react';
-import { Download, FileText, Archive, BookOpen, FileCode, X, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, FileText, Archive, BookOpen, FileCode, X, Loader2 } from 'lucide-react';
+import { exportProject } from '../services/browserExport';
 
 export default function ExportModal({ isOpen, onClose, project }) {
+  const [exporting, setExporting] = useState('');
+  const [error, setError] = useState('');
   if (!isOpen || !project) return null;
 
   const completedCount = (project.chapters || []).filter(c => c.status === 'completed' || c.translatedText).length;
 
-  const handleDownload = (format) => {
-    window.open(`/api/projects/${project.id}/export/${format}`, '_blank');
+  const handleDownload = async (format) => {
+    setExporting(format);
+    setError('');
+    try {
+      await exportProject(project, format);
+    } catch (err) {
+      setError(err.message || 'Không thể tạo file xuất.');
+    } finally {
+      setExporting('');
+    }
   };
 
   const exportFormats = [
@@ -106,15 +117,19 @@ export default function ExportModal({ isOpen, onClose, project }) {
 
                     <button
                       onClick={() => handleDownload(item.id)}
+                      disabled={Boolean(exporting)}
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 shadow-lg shadow-indigo-600/20"
                     >
-                      <Download className="w-4 h-4" /> Tải về
+                      {exporting === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                      {exporting === item.id ? 'Đang tạo...' : 'Tải về'}
                     </button>
                   </div>
                 );
               })}
             </div>
           )}
+
+          {error && <p className="rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-xs text-red-300">{error}</p>}
 
           {/* Export Glossary Button */}
           <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
